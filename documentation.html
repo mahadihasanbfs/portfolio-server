@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 p-8">
+
+    <div class="max-w-4xl mx-auto">
+
+        <h1 class="text-3xl font-bold mb-4">API Documentation</h1>
+
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold mb-2">Base URL</h2>
+            <p class="text-gray-700"><code>localhost:5001/api/v1</code></p>
+        </div>
+
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold mb-2">Authentication</h2>
+            <p class="text-gray-700">This API requires authentication. For the <code>POST</code> and <code>PUT</code>
+                methods, you need to include a specific header value <code>mohotasim_hadi_rafi</code>.</p>
+            <pre class="bg-gray-200 p-4 rounded-md"><code>Authorization: mohotasim_hadi_rafi</code></pre>
+        </div>
+
+        <div>
+            <h2 class="text-xl font-semibold mb-4">Endpoints</h2>
+
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold mb-2">Create Resource</h3>
+                <p class="text-gray-700"><strong>URL:</strong> <code>POST /resource</code></p>
+                <p class="text-gray-700"><strong>Description:</strong> Create a new resource.</p>
+                <p class="text-gray-700"><strong>Headers:</strong> <code>Authorization: mohotasim_hadi_rafi</code></p>
+                <pre class="bg-gray-200 p-4 rounded-md"><code>POST /api/v1/resource</code></pre>
+                <pre class="bg-gray-200 p-4 rounded-md"><code>
+            Request Body:
+            {
+                "name": "Resource Name",
+                "description": "Resource Description"
+            }
+            </code></pre>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold mb-2">Update Resource</h3>
+                <p class="text-gray-700"><strong>URL:</strong> <code>PUT /resource/{id}</code></p>
+                <p class="text-gray-700"><strong>Description:</strong> Update an existing resource.</p>
+                <p class="text-gray-700"><strong>Headers:</strong> <code>Authorization: mohotasim_hadi_rafi</code></p>
+                <pre class="bg-gray-200 p-4 rounded-md"><code>PUT /api/v1/resource/123</code></pre>
+                <pre class="bg-gray-200 p-4 rounded-md"><code>
+            Request Body:
+            {
+                "name": "Updated Resource Name",
+                "description": "Updated Resource Description"
+            }
+            </code></pre>
+            </div>
+
+            <!-- Add more endpoints as needed -->
+        </div>
+
+    </div>
+
+</body>
+
+</html>

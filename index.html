@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 text-gray-900">
+    <div class="container mx-auto p-8">
+        <h1 class="text-4xl font-bold mb-8 text-center">API Documentation</h1>
+
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+            <h2 class="text-2xl font-semibold mb-4">Blog Management</h2>
+
+            <div class="mb-4">
+                <div class="font-bold text-lg text-blue-600">POST <span>/api/blogs</span></div>
+                <div class="italic">Add a new blog post</div>
+                <div class="mt-2">
+                    <h3 class="font-semibold">Parameters</h3>
+                    <pre class="bg-gray-200 p-4 rounded mt-2">
+{
+  "title": "string",
+  "content": "string",
+  "author": "string"
+}
+                    </pre>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="font-bold text-lg text-blue-600">PUT <span>/api/blogs/:id</span></div>
+                <div class="italic">Edit an existing blog post</div>
+                <div class="mt-2">
+                    <h3 class="font-semibold">Parameters</h3>
+                    <pre class="bg-gray-200 p-4 rounded mt-2">
+{
+  "title": "string",
+  "content": "string",
+  "author": "string"
+}
+                    </pre>
+                </div>
+            </div>
+
+            <div>
+                <div class="font-bold text-lg text-blue-600">DELETE <span>/api/blogs/:id</span></div>
+                <div class="italic">Delete a blog post</div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+            <h2 class="text-2xl font-semibold mb-4">User Management</h2>
+
+            <div class="mb-4">
+                <div class="font-bold text-lg text-blue-600">POST <span>/api/users</span></div>
+                <div class="italic">Add a new user</div>
+                <div class="mt-2">
+                    <h3 class="font-semibold">Parameters</h3>
+                    <pre class="bg-gray-200 p-4 rounded mt-2">
+{
+  "name": "string",
+  "email": "string",
+  "password": "string"
+}
+                    </pre>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="font-bold text-lg text-blue-600">PUT <span>/api/users/:id</span></div>
+                <div class="italic">Update an existing user</div>
+                <div class="mt-2">
+                    <h3 class="font-semibold">Parameters</h3>
+                    <pre class="bg-gray-200 p-4 rounded mt-2">
+{
+  "name": "string",
+  "email": "string"
+}
+                    </pre>
+                </div>
+            </div>
+
+            <div>
+                <div class="font-bold text-lg text-blue-600">DELETE <span>/api/users/:id</span></div>
+                <div class="italic">Delete a user</div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+            <h2 class="text-2xl font-semibold mb-4">Job Offers</h2>
+
+            <div class="mb-4">
+                <div class="font-bold text-lg text-blue-600">POST <span>/api/jobs</span></div>
+                <div class="italic">Add a new job offer</div>
+                <div class="mt-2">
+                    <h3 class="font-semibold">Parameters</h3>
+                    <pre class="bg-gray-200 p-4 rounded mt-2">
+{
+  "title": "string",
+  "description": "string",
+  "location": "string",
+  "salary": "number"
+}
+                    </pre>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="font-bold text-lg text-blue-600">PUT <span>/api/jobs/:id</span></div>
+                <div class="italic">Edit an existing job offer</div>
+                <div class="mt-2">
+                    <h3 class="font-semibold">Parameters</h3>
+                    <pre class="bg-gray-200 p-4 rounded mt-2">
+{
+  "title": "string",
+  "description": "string",
+  "location": "string",
+  "salary": "number"
+}
+                    </pre>
+                </div>
+            </div>
+
+            <div>
+                <div class="font-bold text-lg text-blue-600">DELETE <span>/api/jobs/:id</span></div>
+                <div class="italic">Delete a job offer</div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+            <h2 class="text-2xl font-semibold mb-4">Job Applications</h2>
+
+            <div class="mb-4">
+                <div class="font-bold text-lg text-blue-600">POST <span>/api/applications</span></div>
+                <div class="italic">Submit a job application</div>
+                <div class="mt-2">
+                    <h3 class="font-semibold">Parameters</h3>
+                    <pre class="bg-gray-200 p-4 rounded mt-2">
+{
+  "jobId": "string",
+  "applicantName": "string",
+  "applicantEmail": "string",
+  "resume": "string"
+}
+                    </pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+            <h2 class="text-2xl font-semibold mb-4">Projects</h2>
+
+            <div class="mb-4">
+                <div class="font-bold text-lg text-blue-600">POST <span>/api/projects</span></div>
+                <div class="italic">Add a new project</div>
+                <div class="mt-2">
+                    <h3 class="font-semibold">Parameters</h3>
+                    <pre class="bg-gray-200 p-4 rounded mt-2">
+{
+  "name": "string",
+  "description": "string",
+  "startDate": "string",
+  "endDate": "string"
+}
+                    </pre>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="font-bold text-lg text-blue-600">PUT <span>/api/projects/:id</span></div>
+                <div class="italic">Edit an existing project</div>
+                <div class="mt-2">
+                    <h3 class="font-semibold">Parameters</h3>
+                    <pre class="bg-gray-200 p-4 rounded mt-2">
+{
+  "name": "string",
+  "description": "string",
+  "startDate": "string",
+  "endDate": "string"
+}
+                    </pre>
+                </div>
+            </div>
+
+            <div>
+                <div class="font-bold text-lg text-blue-600">DELETE <span>/api/projects/:id</span></div>
+                <div class="italic">Delete a project</div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+            <h2 class="text-2xl font-semibold mb-4">Tasks</h2>
+
+            <div class="mb-4">
+                <div class="font-bold text-lg text-blue-600">POST <span>/api/tasks</span></div>
+                <div class="italic">Add a new task</div>
+                <div class="mt-2">
+                    <h3 class="font-semibold">Parameters</h3>
+                    <pre class="bg-gray-200 p-4 rounded mt-2">
+{
+  "projectId": "string",
+  "title": "string",
+  "description": "string",
+  "status": "string"
+}
+                    </pre>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="font-bold text-lg text-blue-600">PUT <span>/api/tasks/:id</span></div>
+                <div class="italic">Edit an existing task</div>
+                <div class="mt-2">
+                    <h3 class="font-semibold">Parameters</h3>
+                    <pre class="bg-gray-200 p-4 rounded mt-2">
+{
+  "title": "string",
+  "description": "string",
+  "status": "string"
+}
+                    </pre>
+                </div>
+            </div>
+
+            <div>
+                <div class="font-bold text-lg text-blue-600">DELETE <span>/api/tasks/:id</span></div>
+                <div class="italic">Delete a task</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
