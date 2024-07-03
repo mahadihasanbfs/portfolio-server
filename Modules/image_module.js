@@ -8,9 +8,9 @@ const upload_image = async (req, res, next) => {
         const fileType = req.file.mimetype.startsWith('image') ? 'jpg' : 'pdf';
         const result = await images_collection.insertOne({ file: fileBuffer, fileType });
 
-        const fileUrl = `http://localhost:5010/api/v1/image/${result.insertedId}.${fileType}`;
-        console.log(fileUrl);
-        res.send({ status: true, message: 'File uploaded successfully', id: result.insertedId, imageUrl: fileUrl, request_time: new Date().getTime() });
+        const image_url = `https://server.brightfuturesoft.com/api/v1/image/${result.insertedId}.${fileType}`;
+        console.log(image_url);
+        res.send({ status: true, message: 'File uploaded successfully', id: result.insertedId, image_url: image_url, request_time: new Date().getTime() });
     } catch (err) {
         next(err);
     }
