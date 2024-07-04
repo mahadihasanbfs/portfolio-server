@@ -6,6 +6,8 @@ const cors = require('cors');
 
 const blogRouter = require('./Routers/blog_router');
 const imageRouter = require('./Routers/image_router');
+const auth_router = require('./Routers/auth_router');
+const job_application_router = require('./Routers/job_application_router');
 
 app.use(cors());
 app.use(express.json());
@@ -26,6 +28,8 @@ app.get("/api/v1/", (req, res) => {
 // API routes
 app.use('/api/v1/blog', blogRouter);
 app.use('/api/v1/image', imageRouter);
+app.use('/api/v1/auth', auth_router);
+app.use('/api/v1/job-post', job_application_router);
 
 // Error Handling Middleware
 app.use((req, res, next) => {

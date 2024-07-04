@@ -1,6 +1,6 @@
 const check_user = (req, res, next) => {
     // if heder_have_userid = mohotasim_hadi_rafi than next 
-    if (req.header('author') == 'mohotasim_hadi_rafi') {
+    if (req.header('author') == 'bright_future_soft') {
         next()
     } else {
         res.send({
