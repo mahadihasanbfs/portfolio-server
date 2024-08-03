@@ -1,31 +1,21 @@
 const { ObjectId } = require("mongodb");
 
-const { blog_collection } = require("../Collection/all_collection");
+const { blogs_collection } = require("../Collection/all_collection");
 
 const add_blog = async (req, res, next) => {
     const body = req.body;
 
-    console.log(body);
-
     try {
-        if (body && body.content && body.content.length > 0) {
 
-            const result = await blog_collection.insertOne(body);
+        const result = await blogs_collection.insertOne(body);
 
-            res.send({
-                success: true,
-                message: 'Words added successfully',
-                data: result.ops, // Return inserted documents
-                request_time: new Date().getTime()
-            });
-        } else {
+        res.send({
+            success: true,
+            message: 'Words added successfully',
+            data: result.ops,
+            request_time: new Date().getTime()
+        });
 
-            res.send({
-                success: false,
-                message: 'Words not provided or empty.',
-                request_time: new Date().getTime()
-            });
-        }
     } catch (error) {
         next(error);
     }
@@ -33,7 +23,7 @@ const add_blog = async (req, res, next) => {
 
 const all_blog = async (req, res, next) => {
     try {
-        const blogs = await blog_collection.find().sort({ timestamp: -1 }).toArray();
+        const blogs = await blogs_collection.find({}).toArray();
         res.send({
             success: true,
             message: 'All blogs',
@@ -48,20 +38,14 @@ const all_blog = async (req, res, next) => {
 const delete_blog = async (req, res, next) => {
     const id = req.query.blog_id;
     try {
-        const result = await blog_collection.deleteOne({ _id: new ObjectId(id) });
-        if (result.deletedCount === 1) {
-            res.send({
-                success: true,
-                message: 'Blog deleted successfully',
-                request_time: new Date().getTime()
-            });
-        } else {
-            res.status(404).send({
-                success: false,
-                message: 'Blog not found',
-                request_time: new Date().getTime()
-            });
-        }
+        const result = await blogs_collection.deleteOne({ _id: new ObjectId(id) });
+
+        res.send({
+            success: true,
+            message: 'Blog deleted successfully',
+            request_time: new Date().getTime()
+        });
+
     } catch (error) {
         next(error);
     }
@@ -71,7 +55,7 @@ const update_blog = async (req, res, next) => {
     const id = req.query.blog_id;
     const body = req.body;
     try {
-        const result = await blog_collection.updateOne({ _id: new ObjectId(id) }, { $set: { ...body } });
+        const result = await blogs_collection.updateOne({ _id: new ObjectId(id) }, { $set: { ...body } });
         if (result.modifiedCount === 1) {
             res.send({
                 success: true,
@@ -95,7 +79,7 @@ const update_blog = async (req, res, next) => {
 const get_blog_by_id = async (req, res, next) => {
     const id = req.query.blog_id;
     try {
-        const blog = await blog_collection.findOne({ _id: new ObjectId(id) });
+        const blog = await blogs_collection.findOne({ url: id });
         if (blog) {
             res.send({
                 success: true,

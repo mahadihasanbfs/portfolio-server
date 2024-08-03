@@ -1,5 +1,4 @@
 const check_user = (req, res, next) => {
-    // if heder_have_userid = mohotasim_hadi_rafi than next 
     if (req.header('author') == 'bright_future_soft') {
         next()
     } else {
@@ -11,3 +10,5 @@ const check_user = (req, res, next) => {
     }
 }
 module.exports = check_user
+
+
