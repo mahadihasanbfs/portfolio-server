@@ -8,8 +8,8 @@ const upload_image = async (req, res, next) => {
         const fileType = req.file.mimetype.startsWith('image') ? 'jpg' : 'pdf';
         const result = await images_collection.insertOne({ file: fileBuffer, fileType });
 
-        const image_url = `http://localhost:5010/api/v1/image/${result.insertedId}.${fileType}`;
-        const blur_image_url = `http://localhost:5010/api/v1/image/blur/${result.insertedId}.${fileType}`;
+        const image_url = `https://server.brightfuturesoft.com/api/v1/image/${result.insertedId}.${fileType}`;
+        const blur_image_url = `https://server.brightfuturesoft.com/api/v1/image/blur/${result.insertedId}.${fileType}`;
 
         res.send({ status: true, message: 'File uploaded successfully', id: result.insertedId, image_url: image_url, blur_image_url, request_time: new Date().getTime() });
     } catch (err) {

@@ -214,7 +214,7 @@ const forget_password = async (req, res, next) => {
         }
 
         const resetToken = jwt.sign({ email: user.email }, 'your_jwt_secret_key', { expiresIn: '1h' });
-        const resetLink = `http://localhost:3001/reset-password?token=${resetToken}`;
+        const resetLink = `https://www.brightfuturesoft.com/reset-password?token=${resetToken}`;
 
         const mailOptions = {
             from: 'noreply@brightfuturesoft.com',
