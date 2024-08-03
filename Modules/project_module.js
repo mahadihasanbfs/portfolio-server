@@ -2,42 +2,30 @@ const { ObjectId } = require("mongodb");
 
 const { project_collection } = require("../Collection/all_collection");
 
-const add_blog = async (req, res, next) => {
+const add_project = async (req, res, next) => {
     const body = req.body;
-
-    console.log(body);
-
     try {
-        if (body && body.content && body.content.length > 0) {
+        const result = await project_collection.insertOne(body);
 
-            const result = await project_collection.insertOne(body);
+        res.send({
+            success: true,
+            message: 'Project added successfully',
+            data: result.ops, // Return inserted documents
+            request_time: new Date().getTime()
+        });
 
-            res.send({
-                success: true,
-                message: 'Project added successfully',
-                data: result.ops, // Return inserted documents
-                request_time: new Date().getTime()
-            });
-        } else {
-
-            res.send({
-                success: false,
-                message: 'Words not provided or empty.',
-                request_time: new Date().getTime()
-            });
-        }
     } catch (error) {
         next(error);
     }
 }
 
-const all_blog = async (req, res, next) => {
+const all_project = async (req, res, next) => {
     try {
-        const blogs = await project_collection.find().sort({ timestamp: -1 }).toArray();
+        const projects = await project_collection.find().sort({ timestamp: -1 }).toArray();
         res.send({
             success: true,
             message: 'All Projects',
-            data: blogs,
+            data: projects,
             request_time: new Date().getTime()
         });
     } catch (error) {
@@ -45,8 +33,8 @@ const all_blog = async (req, res, next) => {
     }
 }
 
-const delete_blog = async (req, res, next) => {
-    const id = req.query.blog_id;
+const delete_project = async (req, res, next) => {
+    const id = req.query.project_id;
     try {
         const result = await project_collection.deleteOne({ _id: new ObjectId(id) });
         if (result.deletedCount === 1) {
@@ -58,7 +46,7 @@ const delete_blog = async (req, res, next) => {
         } else {
             res.status(404).send({
                 success: false,
-                message: 'Blog not found',
+                message: 'project not found',
                 request_time: new Date().getTime()
             });
         }
@@ -67,21 +55,21 @@ const delete_blog = async (req, res, next) => {
     }
 }
 
-const update_blog = async (req, res, next) => {
-    const id = req.query.blog_id;
+const update_project = async (req, res, next) => {
+    const id = req.query.project_id;
     const body = req.body;
     try {
         const result = await project_collection.updateOne({ _id: new ObjectId(id) }, { $set: { ...body } });
         if (result.modifiedCount === 1) {
             res.send({
                 success: true,
-                message: 'Blog updated successfully',
+                message: 'project updated successfully',
                 request_time: new Date().getTime()
             });
         } else {
             res.status(404).send({
                 success: false,
-                message: 'Blog not found',
+                message: 'project not found',
                 request_time: new Date().getTime()
             });
         }
@@ -92,21 +80,21 @@ const update_blog = async (req, res, next) => {
 
 
 
-const get_blog_by_id = async (req, res, next) => {
-    const id = req.query.blog_id;
+const get_project_by_id = async (req, res, next) => {
+    const id = req.query.project_id;
     try {
-        const blog = await project_collection.findOne({ _id: new ObjectId(id) });
-        if (blog) {
+        const project = await project_collection.findOne({ url: id });
+        if (project) {
             res.send({
                 success: true,
-                message: 'Blog found successfully',
-                data: blog,
+                message: 'project found successfully',
+                data: project,
                 request_time: new Date().getTime()
             });
         } else {
             res.status(404).send({
                 success: false,
-                message: 'Blog not found',
+                message: 'project not found',
                 request_time: new Date().getTime()
             });
         }
@@ -115,4 +103,4 @@ const get_blog_by_id = async (req, res, next) => {
     }
 }
 
-module.exports = { add_blog, all_blog, delete_blog, update_blog, get_blog_by_id };
+module.exports = { add_project, all_project, delete_project, update_project, get_project_by_id };
