@@ -12,21 +12,23 @@ const issue_router = require('./Routers/issue_router');
 const notice_router = require('./Routers/notice_router');
 const meeting_router = require('./Routers/meeting_router');
 const project_router = require('./Routers/project_router');
+const subcriber_router = require('./Routers/subcriber_router');
+const contact_router = require('./Routers/contact_router');
 
 app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "index.html"));
+      res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // API version 1 routes
 app.get("/api/v1/", (req, res) => {
-    res.send({
-        success: true,
-        message: 'API is up and running',
-        request_time: new Date().getTime()
-    });
+      res.send({
+            success: true,
+            message: 'API is up and running',
+            request_time: new Date().getTime()
+      });
 });
 
 // API routes
@@ -38,38 +40,40 @@ app.use('/api/v1/issue', issue_router);
 app.use('/api/v1/notice', notice_router);
 app.use('/api/v1/meeting', meeting_router);
 app.use('/api/v1/project', project_router);
+app.use('/api/v1/subscriber', subcriber_router);
+app.use('/api/v1/contact', contact_router);
 
 
 // Error Handling Middleware
 app.use((req, res, next) => {
-    res.status(404).json({
-        success: false,
-        message: 'API Not Found',
-        errorMessages: [
-            {
-                path: req.originalUrl,
-                message: 'Endpoint Not Found',
-            },
-        ],
-        request_no: new Date().getTime()
-    });
+      res.status(404).json({
+            success: false,
+            message: 'API Not Found',
+            errorMessages: [
+                  {
+                        path: req.originalUrl,
+                        message: 'Endpoint Not Found',
+                  },
+            ],
+            request_no: new Date().getTime()
+      });
 });
 
 app.use((err, req, res, next) => {
-    console.error('Global Error Handler: ', err);
+      console.error('Global Error Handler: ', err);
 
-    const status = err.status || 500;
-    const message = err.message || 'An error occurred';
-    const errors = err.errors ? err.errors : [{ message }];
+      const status = err.status || 500;
+      const message = err.message || 'An error occurred';
+      const errors = err.errors ? err.errors : [{ message }];
 
-    res.status(status).json({
-        success: false,
-        message,
-        errors,
-        request_no: new Date().getTime()
-    });
+      res.status(status).json({
+            success: false,
+            message,
+            errors,
+            request_no: new Date().getTime()
+      });
 });
 
 app.listen(port, () => {
-    console.log(`Server is listening on http://localhost:${port}`);
+      console.log(`Server is listening on http://localhost:${port}`);
 });

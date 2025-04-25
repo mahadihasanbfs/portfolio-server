@@ -25,6 +25,8 @@ const task_collection = client.db("admin").collection("task");
 const member_collection = client.db("admin").collection("member");
 const issue_collection = client.db("notice").collection("issue");
 const notice_collection = client.db("notice").collection("notice");
+const contact_collection = client.db("contact").collection("contact");
+const subscriber_collection = client.db("contact").collection("subscriber");
 
 
 module.exports = {
@@ -39,6 +41,8 @@ module.exports = {
     member_collection,
     testimonial_collection,
     issue_collection,
-    notice_collection
+    notice_collection,
+    contact_collection,
+    subscriber_collection
 
 }
