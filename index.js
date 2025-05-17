@@ -14,6 +14,7 @@ const meeting_router = require('./Routers/meeting_router');
 const project_router = require('./Routers/project_router');
 const subcriber_router = require('./Routers/subcriber_router');
 const contact_router = require('./Routers/contact_router');
+const task_router = require('./Routers/task_router');
 
 app.use(cors());
 app.use(express.json());
@@ -42,6 +43,7 @@ app.use('/api/v1/meeting', meeting_router);
 app.use('/api/v1/project', project_router);
 app.use('/api/v1/subscriber', subcriber_router);
 app.use('/api/v1/contact', contact_router);
+app.use('/api/v1/task', task_router);
 
 
 // Error Handling Middleware
