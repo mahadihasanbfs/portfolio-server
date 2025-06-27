@@ -73,7 +73,7 @@ const update_job_post = async (req, res, next) => {
         if (result.modifiedCount === 1) {
             res.send({
                 success: true,
-                message: 'job_post updated successfully',
+                message: 'job_post updated successfully.',
                 request_time: new Date().getTime()
             });
         } else {
