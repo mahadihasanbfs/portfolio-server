@@ -84,19 +84,45 @@ const update_meeting = async (req, res, next) => {
 
 const get_meetings = async (req, res, next) => {
       try {
-            const result = await meeting_collection.find({}).toArray()
-            res.send(
-                  {
-                        success: true,
-                        message: 'Meeting not found',
+            const email = req.query.email;
+
+            if (!email) {
+                  return res.status(400).send({
+                        success: false,
+                        message: 'Email is required',
                         request_time: new Date().getTime(),
-                        data: result
-                  }
-            )
+                        data: [],
+                  });
+            }
+
+            // Query inside selectedUsers array
+            const result = await meeting_collection
+                  .find({ 'selectedUsers.email': email })
+                  .toArray();
+
+            const allMeetings = await meeting_collection.find({}).toArray();
+
+            let meeting_data = [];
+
+            if (email === 'ceo@brightfuturesoft.com') {
+                  meeting_data = allMeetings;
+            } else {
+                  meeting_data = result;
+            }
+
+            res.send({
+                  success: true,
+                  message: result.length ? 'Meetings fetched successfully' : 'No meetings found',
+                  request_time: new Date().getTime(),
+                  data: meeting_data,
+            });
+
       } catch (error) {
-            next(error)
+            next(error);
       }
-}
+};
+
+
 
 
 module.exports = {
