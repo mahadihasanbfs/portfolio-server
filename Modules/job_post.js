@@ -34,19 +34,19 @@ const all_job_post = async (req, res, next) => {
                   });
                   return {
                         ...job,
-                        application_count+ 100
-            };
-      }));
+                        application_count: application_count + 100
+                  };
+            }));
 
-      res.send({
-            success: true,
-            message: 'All job posts with application counts',
-            data: job_posts_with_counts,
-            request_time: new Date().getTime()
-      });
-} catch (error) {
-      next(error);
-}
+            res.send({
+                  success: true,
+                  message: 'All job posts with application counts',
+                  data: job_posts_with_counts,
+                  request_time: new Date().getTime()
+            });
+      } catch (error) {
+            next(error);
+      }
 };
 
 const delete_job_post = async (req, res, next) => {
