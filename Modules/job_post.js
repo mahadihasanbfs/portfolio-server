@@ -4,6 +4,7 @@ const { job_application_collection, job_collection } = require("../Collection/al
 
 const add_job_post = async (req, res, next) => {
       const body = req.body;
+      body.timestamp = new Date().getTime();
 
       try {
 

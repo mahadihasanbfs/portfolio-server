@@ -3,7 +3,8 @@ const { client_meeting_collection } = require("../Collection/all_collection");
 
 const get_client_meeting = async (req, res, next) => {
       try {
-            const meetings = await client_meeting_collection.find().toArray();
+            //need last is fast out
+            const meetings = await client_meeting_collection.find().sort({ timestamp: -1 }).toArray();
             res.send({
                   success: true,
                   message: 'All meetings',
@@ -17,6 +18,7 @@ const get_client_meeting = async (req, res, next) => {
 
 const add_client_meeting = async (req, res, next) => {
       const body = req.body;
+      body.timestamp = new Date().getTime();
       try {
             const result = await client_meeting_collection.insertOne(body);
             res.send({
@@ -47,6 +49,7 @@ const delete_client_meeting = async (req, res, next) => {
 const update_client_meeting = async (req, res, next) => {
       const id = req.query.client_meeting_id;
       const body = req.body;
+      body.timestamp = new Date().getTime();
       try {
             const result = await client_meeting_collection.updateOne({ _id: new ObjectId(id) }, { $set: { ...body } });
             if (result.modifiedCount === 1) {
