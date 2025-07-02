@@ -27,7 +27,7 @@ const issue_collection = client.db("notice").collection("issue");
 const notice_collection = client.db("notice").collection("notice");
 const contact_collection = client.db("contact").collection("contact");
 const subscriber_collection = client.db("contact").collection("subscriber");
-
+const client_meeting_collection = client.db("administrator").collection("client_meeting");
 
 
 module.exports = {
@@ -44,6 +44,7 @@ module.exports = {
       issue_collection,
       notice_collection,
       contact_collection,
-      subscriber_collection
+      subscriber_collection,
+      client_meeting_collection
 
 }

@@ -34,7 +34,7 @@ const all_job_post = async (req, res, next) => {
                   });
                   return {
                         ...job,
-                        application_count: application_count + 100
+                        application_count: application_count
                   };
             }));
 
