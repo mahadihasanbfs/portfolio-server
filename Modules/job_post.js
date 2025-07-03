@@ -4,6 +4,7 @@ const { job_application_collection, job_collection } = require("../Collection/al
 
 const add_job_post = async (req, res, next) => {
       const body = req.body;
+      body.timestamp = new Date().getTime();
 
       try {
 
@@ -34,7 +35,7 @@ const all_job_post = async (req, res, next) => {
                   });
                   return {
                         ...job,
-                        application_count: application_count + 100
+                        application_count: application_count
                   };
             }));
 
