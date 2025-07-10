@@ -1,11 +1,31 @@
 const { ObjectId } = require("mongodb");
 const { meeting_collection } = require("../Collection/all_collection");
+const { sendMeetingInvite } = require("./mailer");
 
 const add_meeting = async (req, res, next) => {
-      const body = req.body
-      console.log(body);
+      const body = req.body;
+      body.timestamp = new Date().getTime();
+
       try {
             const result = await meeting_collection.insertOne(body);
+
+            // Ensure attendees is always set
+            const attendees = Array.isArray(body.selectedUsers) ? body.selectedUsers : [];
+
+            // Send meeting invite to each selected user
+            await Promise.all(
+                  attendees.map(user =>
+                        sendMeetingInvite({
+                              to: user.email,
+                              title: body.title,
+                              agenda: body.agenda,
+                              date: body.date,
+                              duration: body.duration,
+                              link: body.link,
+                              attendees // send all attendees for calendar
+                        })
+                  )
+            );
 
             res.send({
                   success: true,
@@ -14,11 +34,10 @@ const add_meeting = async (req, res, next) => {
                   request_time: new Date().getTime()
             });
 
-      }
-      catch (error) {
+      } catch (error) {
             next(error);
       }
-}
+};
 
 const edit_meeting = async (req, res, next) => {
       const id = req.query.meeting_id;
