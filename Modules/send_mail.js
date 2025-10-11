@@ -1,31 +1,49 @@
-const fetch = require("node-fetch");
+const nodemailer = require("nodemailer");
 
-const send_mail_candidate = async (req, res, next) => {
+const send_mail_candidate = async (req, res) => {
       try {
-            const requestBody = req.body;
-            const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-                  method: "POST",
-                  headers: {
-                        "Content-Type": "application/json",
-                        Accept: "application/json",
-                        "api-key": "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",
+            const { sender, to, subject, htmlContent, textContent } = req.body;
+
+            // 1️⃣ Configure SMTP Transporter (Brevo)
+            const transporter = nodemailer.createTransport({
+                  host: "smtp-relay.brevo.com",
+                  port: 587,
+                  secure: false, // use STARTTLS
+                  auth: {
+                        user: "7966ba002@smtp-brevo.com", // Brevo SMTP login
+                        pass: "1hA3OpDNFH5TxVsy", // Replace with your Brevo SMTP password
                   },
-                  body: JSON.stringify(requestBody),
             });
 
-            const data = await response.json();
-            console.log(data);
+            // 2️⃣ Extract recipient emails
+            const toEmails = to?.map((item) => item.email) || [];
 
-            res.send(data);
+            // 3️⃣ Mail options
+            const mailOptions = {
+                  from: `"${sender?.name || "Bright Future Soft HR"}" <${sender?.email || "hr@brightfuturesoft.com"}>`,
+                  to: toEmails,
+                  subject,
+                  text: textContent,
+                  html: htmlContent,
+            };
+
+            // 4️⃣ Send the mail
+            const info = await transporter.sendMail(mailOptions);
+            console.log("✅ Email sent successfully:", info.messageId);
+
+            res.json({
+                  success: true,
+                  message: "Email sent successfully",
+                  messageId: info.messageId,
+            });
       } catch (error) {
-            console.error("Error sending email via Brevo:", error);
+            console.error("❌ Error sending email:", error);
             res.status(500).json({
                   success: false,
                   message: "Failed to send email",
                   error: error.message,
             });
       }
-}
-
+};
 
 module.exports = { send_mail_candidate };
