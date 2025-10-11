@@ -8,7 +8,7 @@ const send_mail_candidate = async (req, res, next) => {
                   headers: {
                         "Content-Type": "application/json",
                         Accept: "application/json",
-                        "api-key": "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",
+                        "api-key": "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",
                   },
                   body: JSON.stringify(requestBody),
             });
