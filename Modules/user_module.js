@@ -57,7 +57,8 @@ const sign_up = async (req, res, next) => {
                   password: hashedPassword,
                   designation,
                   image,
-                  timestamp: new Date().getTime()
+                  timestamp: new Date().getTime(),
+                  ...req.body, 
             };
 
             const result = await user_collection.insertOne(user);
