@@ -52,13 +52,13 @@ const sign_up = async (req, res, next) => {
 
             const hashedPassword = await bcrypt.hash(password, 10);
             const user = {
+                  ...req.body, 
                   name,
                   email,
                   password: hashedPassword,
                   designation,
                   image,
                   timestamp: new Date().getTime(),
-                  ...req.body, 
             };
 
             const result = await user_collection.insertOne(user);
