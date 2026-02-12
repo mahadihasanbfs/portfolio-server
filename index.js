@@ -6,6 +6,7 @@ const cors = require('cors');
 
 const blogRouter = require('./Routers/blog_router');
 const imageRouter = require('./Routers/image_router');
+const imageRouter2 = require('./Routers/image_v2');
 const auth_router = require('./Routers/auth_router');
 const job_router = require('./Routers/job_router');
 const issue_router = require('./Routers/issue_router');
@@ -46,6 +47,7 @@ app.use('/api/v1/subscriber', subcriber_router);
 app.use('/api/v1/contact', contact_router);
 app.use('/api/v1/task', task_router);
 app.use('/api/v1/mail', mail_router);
+app.use('/api/v2/image', imageRouter2);
 
 
 // Error Handling Middleware

@@ -3,7 +3,7 @@ require("dotenv").config();
 
 const uri = `mongodb+srv://brightfuturesoft:brightfuturesoft@brightfuturesoft.b1ugidh.mongodb.net/?retryWrites=true&w=majority&appName=brightfuturesoft`;
 
-// const uri = 'mongodb://localhost:27017'
+
 
 
 
@@ -14,6 +14,7 @@ const client = new MongoClient(uri, {
 
 
 const images_collection = client.db("images").collection("images");
+const image_collection = client.db("images").collection("image");
 const user_collection = client.db("users").collection("user");
 const blogs_collection = client.db("content").collection("blogs");
 const project_collection = client.db("content").collection("project");
@@ -45,6 +46,7 @@ module.exports = {
       notice_collection,
       contact_collection,
       subscriber_collection,
-      client_meeting_collection
+      client_meeting_collection,
+      image_collection
 
 }
