@@ -226,6 +226,7 @@ const get_image_by_id = async (req, res, next) => {
 //       }
 // };
 
+
 const get_image_by_id_v2 = async (req, res, next) => {
       try {
             const id = req.params.id;
@@ -241,23 +242,25 @@ const get_image_by_id_v2 = async (req, res, next) => {
             const fileUrl = fileDoc.fileUrl;
 
             const response = await axios.get(fileUrl, {
-                  responseType: "arraybuffer", // buffer mode
+                  responseType: "stream",
             });
 
-            // ✅ RAW হলে PDF হিসেবে serve করবো
-            let contentType = "application/pdf";
-
-            if (fileDoc.resource_type === "image") {
-                  contentType = response.headers["content-type"];
+            if (fileDoc.resource_type === "raw") {
+                  res.setHeader("Content-Type", "application/pdf");
+                  res.setHeader("Content-Disposition", "inline");
+            } else {
+                  res.setHeader(
+                        "Content-Type",
+                        response.headers["content-type"] || "image/jpeg"
+                  );
             }
 
-            res.setHeader("Content-Type", contentType);
-            res.setHeader("Content-Disposition", "inline");
-
-            res.send(Buffer.from(response.data));
+            response.data.pipe(res);
 
       } catch (err) {
             next(err);
       }
 };
+
+
 module.exports = { upload_image, get_image_by_id, get_blurred_image_by_id, get_image_by_id_v2 };
