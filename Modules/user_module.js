@@ -52,7 +52,7 @@ const sign_up = async (req, res, next) => {
 
             const hashedPassword = await bcrypt.hash(password, 10);
             const user = {
-                  ...req.body, 
+                  ...req.body,
                   name,
                   email,
                   password: hashedPassword,
@@ -304,8 +304,8 @@ const get_all_users = async (req, res, next) => {
 
 const update_user_data = async (req, res, next) => {
       const { user_id } = req.query;
-      const { name, designation, image } = req.body;
-     
+      const { phone, linkedin, dob, name, designation, image } = req.body;
+
 
       try {
             const user = await user_collection.findOne({ _id: new ObjectId(user_id) });
@@ -317,7 +317,7 @@ const update_user_data = async (req, res, next) => {
                   });
             }
 
-            await user_collection.updateOne({ _id: new ObjectId(user_id) }, { $set: { name, designation, image } });
+            await user_collection.updateOne({ _id: new ObjectId(user_id) }, { $set: { name, designation, image, phone, linkedin, dob } });
             let get_user = await user_collection.findOne({ _id: new ObjectId(user_id) });
             delete get_user.password
 
@@ -371,4 +371,27 @@ const update_user_password = async (req, res, next) => {
       }
 };
 
-module.exports = { sign_up, sign_in, forget_password, reset_password, get_all_users, update_user_data, update_user_password };
+const delete_user = async (req, res, next) => {
+      try {
+            const user_id = req.params.id
+            //need to delete user form database
+            const delete_user = await user_collection.deleteOne({ _id: new ObjectId(user_id) });
+            if (delete_user.deletedCount === 0) {
+                  return res.status(404).send({
+                        success: false,
+                        message: "Sorry, we can't find this user.",
+                        request_time: new Date().getTime()
+                  });
+            }
+            res.send({
+                  success: true,
+                  message: 'User deleted successfully.',
+                  request_time: new Date().getTime()
+            });
+
+      } catch (error) {
+            next(error)
+      }
+}
+
+module.exports = { sign_up, sign_in, forget_password, reset_password, get_all_users, update_user_data, update_user_password, delete_user };

@@ -31,45 +31,105 @@ cloudinary.config({
 
 
 
+// const upload_image = async (req, res, next) => {
+//       try {
+//             const imageBuffer = req.file.buffer;
+//             const mimeType = req.file.mimetype;
+//             const image_title = req.body?.title;
+
+//             let sharpInstance = sharp(imageBuffer).resize({ width: 800 });
+//             let compressedImageBuffer;
+
+//             if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
+//                   compressedImageBuffer = await sharpInstance.jpeg({ quality: 90 }).toBuffer();
+//             } else if (mimeType === "image/png") {
+//                   compressedImageBuffer = await sharpInstance.png({ compressionLevel: 8 }).toBuffer();
+//             } else {
+//                   return res.status(400).json({ error: "Unsupported image format" });
+//             }
+
+//             const base64Image = `data:${mimeType};base64,${compressedImageBuffer.toString("base64")}`;
+
+//             const cloudinaryResult = await cloudinary.uploader.upload(base64Image, {
+//                   folder: "bright_future_soft",
+//             });
+
+//             let data = {
+//                   imageUrl: cloudinaryResult.secure_url,
+//                   public_id: cloudinaryResult.public_id,
+//                   createdAt: new Date(),
+//             };
+
+//             if (image_title) data.title = image_title;
+
+//             const result = await image_collection.insertOne(data);
+
+//             res.send({ status: true, message: 'File uploaded successfully', id: result.insertedId, image_url: `https://sever.brightfuturesoft.com/api/v2/image/${result.insertedId}`, request_time: new Date().getTime() });
+//       } catch (err) {
+//             next(err);
+//       }
+// };
+
 const upload_image = async (req, res, next) => {
       try {
-            const imageBuffer = req.file.buffer;
-            const mimeType = req.file.mimetype;
-            const image_title = req.body?.title;
-
-            let sharpInstance = sharp(imageBuffer).resize({ width: 800 });
-            let compressedImageBuffer;
-
-            if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
-                  compressedImageBuffer = await sharpInstance.jpeg({ quality: 90 }).toBuffer();
-            } else if (mimeType === "image/png") {
-                  compressedImageBuffer = await sharpInstance.png({ compressionLevel: 8 }).toBuffer();
-            } else {
-                  return res.status(400).json({ error: "Unsupported image format" });
+            if (!req.file) {
+                  return res.status(400).json({ error: "No file uploaded" });
             }
 
-            const base64Image = `data:${mimeType};base64,${compressedImageBuffer.toString("base64")}`;
+            const fileBuffer = req.file.buffer;
+            const mimeType = req.file.mimetype;
+            const title = req.body?.title;
 
-            const cloudinaryResult = await cloudinary.uploader.upload(base64Image, {
+            let uploadOptions = {
                   folder: "bright_future_soft",
-            });
+            };
 
-            let data = {
-                  imageUrl: cloudinaryResult.secure_url,
+            let base64File;
+
+            // ✅ IMAGE
+            if (mimeType.startsWith("image/")) {
+                  const compressed = await sharp(fileBuffer)
+                        .resize({ width: 1200 })
+                        .jpeg({ quality: 85 })
+                        .toBuffer();
+
+                  base64File = `data:${mimeType};base64,${compressed.toString("base64")}`;
+                  uploadOptions.resource_type = "image";
+            }
+
+            // ✅ PDF
+            else if (mimeType === "application/pdf") {
+                  base64File = `data:application/pdf;base64,${fileBuffer.toString("base64")}`;
+                  uploadOptions.resource_type = "raw";
+            }
+
+            else {
+                  return res.status(400).json({ error: "Unsupported file type" });
+            }
+
+            const cloudinaryResult = await cloudinary.uploader.upload(
+                  base64File,
+                  uploadOptions
+            );
+
+            const data = {
+                  fileUrl: cloudinaryResult.secure_url,
                   public_id: cloudinaryResult.public_id,
+                  resource_type: cloudinaryResult.resource_type,
+                  format: cloudinaryResult.format,
                   createdAt: new Date(),
             };
 
-            if (image_title) data.title = image_title;
+            if (title) data.title = title;
 
             const result = await image_collection.insertOne(data);
 
-            res.send({ status: true, message: 'File uploaded successfully', id: result.insertedId, image_url: `https://sever.brightfuturesoft.com/api/v2/image/${result.insertedId}`, request_time: new Date().getTime() });
+            res.send({ status: true, message: 'File uploaded successfully', id: result.insertedId, image_url: `http://localhost:5010/api/v2/image/${result.insertedId}`, request_time: new Date().getTime() });
+
       } catch (err) {
             next(err);
       }
 };
-
 
 
 
@@ -142,25 +202,60 @@ const get_image_by_id = async (req, res, next) => {
 };
 
 
+// const get_image_by_id_v2 = async (req, res, next) => {
+//       try {
+//             const imageId = req.params.id;
+//             console.log(imageId);
+
+//             const imageDoc = await image_collection.findOne({
+//                   _id: new ObjectId(imageId),
+//             });
+
+//             if (!imageDoc) {
+//                   return res.status(404).json({ error: "Image not found" });
+//             }
+
+//             const response = await axios.get(imageDoc.imageUrl, {
+//                   responseType: "arraybuffer",
+//             });
+
+//             res.set("Content-Type", response.headers["content-type"]);
+//             res.send(Buffer.from(response.data, "binary"));
+//       } catch (err) {
+//             next(err);
+//       }
+// };
+
 const get_image_by_id_v2 = async (req, res, next) => {
       try {
-            const imageId = req.params.id;
-            console.log(imageId);
+            const id = req.params.id;
 
-            const imageDoc = await image_collection.findOne({
-                  _id: new ObjectId(imageId),
+            const fileDoc = await image_collection.findOne({
+                  _id: new ObjectId(id),
             });
 
-            if (!imageDoc) {
-                  return res.status(404).json({ error: "Image not found" });
+            if (!fileDoc) {
+                  return res.status(404).json({ error: "File not found" });
             }
 
-            const response = await axios.get(imageDoc.imageUrl, {
-                  responseType: "arraybuffer",
+            const fileUrl = fileDoc.fileUrl;
+
+            const response = await axios.get(fileUrl, {
+                  responseType: "arraybuffer", // buffer mode
             });
 
-            res.set("Content-Type", response.headers["content-type"]);
-            res.send(Buffer.from(response.data, "binary"));
+            // ✅ RAW হলে PDF হিসেবে serve করবো
+            let contentType = "application/pdf";
+
+            if (fileDoc.resource_type === "image") {
+                  contentType = response.headers["content-type"];
+            }
+
+            res.setHeader("Content-Type", contentType);
+            res.setHeader("Content-Disposition", "inline");
+
+            res.send(Buffer.from(response.data));
+
       } catch (err) {
             next(err);
       }
