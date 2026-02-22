@@ -124,7 +124,7 @@ const upload_image = async (req, res, next) => {
 
             const result = await image_collection.insertOne(data);
 
-            res.send({ status: true, message: 'File uploaded successfully', id: result.insertedId, image_url: `http://localhost:5010/api/v2/image/${result.insertedId}`, request_time: new Date().getTime() });
+            res.send({ status: true, message: 'File uploaded successfully', id: result.insertedId, image_url: `https://sever.brightfuturesoft.com/api/v2/image/${result.insertedId}`, request_time: new Date().getTime() });
 
       } catch (err) {
             next(err);
