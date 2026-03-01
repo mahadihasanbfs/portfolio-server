@@ -1,3 +1,4 @@
+const { ObjectId } = require("mongodb");
 const { task_collection } = require("../Collection/all_collection");
 
 const add_new_task = async (req, res, next) => {
@@ -64,8 +65,10 @@ const get_task_by_assignedTo = async (req, res, next) => {
 
 const update_task = async (req, res, next) => {
       try {
-            const id = req.params.id;
+            const id = req.query.id;
+            console.log(id);
             const data = req.body;
+            console.log();
             const result = await task_collection.updateOne({ _id: new ObjectId(id) }, { $set: data });
             res.send({
                   success: true,
