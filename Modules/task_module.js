@@ -83,7 +83,7 @@ const update_task = async (req, res, next) => {
 
 const delete_task = async (req, res, next) => {
       try {
-            const id = req.params.id;
+            const id = req.query.id;
             const result = await task_collection.deleteOne({ _id: new ObjectId(id) });
             res.send({
                   success: true,
