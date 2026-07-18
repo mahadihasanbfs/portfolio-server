@@ -22,12 +22,18 @@ const mail_router = require('./Routers/mail_router');
 app.use(cors({
   origin: [
     "https://brightfuturesoft.com",
-    "https://www.brightfuturesoft.com",
-    "http://localhost:3000",
-    "http://localhost:5173",
+    "https://www.brightfuturesoft.com"
   ],
   credentials: true,
+  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "author"
+  ]
 }));
+
+app.options("*", cors());
 
 
 app.use(express.json());
