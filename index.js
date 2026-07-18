@@ -4,6 +4,7 @@ const path = require('path');
 const port = 5010;
 const cors = require('cors');
 
+
 const blogRouter = require('./Routers/blog_router');
 const imageRouter = require('./Routers/image_router');
 const imageRouter2 = require('./Routers/image_v2');
@@ -18,7 +19,17 @@ const contact_router = require('./Routers/contact_router');
 const task_router = require('./Routers/task_router');
 const mail_router = require('./Routers/mail_router');
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    "https://brightfuturesoft.com",
+    "https://www.brightfuturesoft.com",
+    "http://localhost:3000",
+    "http://localhost:5173",
+  ],
+  credentials: true,
+}));
+
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
