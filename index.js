@@ -23,6 +23,7 @@ app.use(cors({
   origin: [
     "https://brightfuturesoft.com",
     "https://www.brightfuturesoft.com"
+    "http://localhost:5173"
   ],
   credentials: true,
   methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
