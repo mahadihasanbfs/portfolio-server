@@ -19,14 +19,22 @@ const contact_router = require('./Routers/contact_router');
 const task_router = require('./Routers/task_router');
 const mail_router = require('./Routers/mail_router');
 
+const allowedOrigins = [
+  "https://brightfuturesoft.com",
+  "https://www.brightfuturesoft.com",
+  "http://localhost:5173"
+];
+
 app.use(cors({
-  origin: [
-    "https://brightfuturesoft.com",
-    "https://www.brightfuturesoft.com"
-    "http://localhost:5173"
-  ],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
-  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
     "Content-Type",
     "Authorization",
