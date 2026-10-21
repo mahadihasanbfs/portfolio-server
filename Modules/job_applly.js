@@ -1,18 +1,46 @@
-const { job_collection } = require("../Collection/all_collection");
+const { job_collection, job_application_collection } = require("../Collection/all_collection");
 const { ObjectId } = require("mongodb");
 
-const apply_job_post = async (req, res, next) => {
-      const body = req.body
-      try {
+const APPLY_FIELDS = [
+      "full_name", "email_address", "phone_number", "resume", "salary_expectation",
+      "experience_in_years", "job_post_id", "why",
+];
 
-            const result = await job_collection.insertOne(body);
+// A job closes at the end of its deadline day, Bangladesh time (UTC+6).
+const deadline_passed = (dateline) =>
+      Boolean(dateline) && Date.now() > new Date(`${dateline}T23:59:59+06:00`).getTime();
+
+const fail = (res, status, message) =>
+      res.status(status).send({ success: false, message, request_time: new Date().getTime() });
+
+const apply_job_post = async (req, res, next) => {
+      try {
+            const body = req.body || {};
+            const jobId = String(body.job_post_id || "");
+            if (!ObjectId.isValid(jobId)) return fail(res, 404, 'This job does not exist.');
+
+            const job = await job_application_collection.findOne({ _id: new ObjectId(jobId) });
+            if (!job) return fail(res, 404, 'This job does not exist.');
+
+            // Enforced here, not only in the form: the API can be called directly.
+            if (deadline_passed(job.dateline)) {
+                  return fail(res, 410, 'The deadline for this position has passed. Applications are closed.');
+            }
+            if (!body.full_name || !body.email_address || !body.resume) {
+                  return fail(res, 400, 'Name, email and resume are required.');
+            }
+
+            // Only the known application fields are stored.
+            const application = Object.fromEntries(APPLY_FIELDS.filter((k) => body[k] !== undefined).map((k) => [k, body[k]]));
+            application.timestamp = new Date().getTime();
+
+            const result = await job_collection.insertOne(application);
             res.send({
                   success: true,
                   message: 'Your application submitted successfully',
-                  data: result.ops,
+                  data: result.insertedId,
                   request_time: new Date().getTime()
             });
-
       } catch (error) {
             next(error);
       }

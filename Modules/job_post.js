@@ -94,6 +94,10 @@ const update_job_post = async (req, res, next) => {
 const get_job_post_by_id = async (req, res, next) => {
       const id = req.query.job_post_id;
       try {
+            // A malformed id is "not found", not a server error.
+            if (!ObjectId.isValid(id)) {
+                  return res.status(404).send({ success: false, message: 'job_post not found', request_time: new Date().getTime() });
+            }
             const job_post = await job_application_collection.findOne({ _id: new ObjectId(id) });
             if (job_post) {
                   res.send({

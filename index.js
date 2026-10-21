@@ -18,6 +18,8 @@ const subcriber_router = require('./Routers/subcriber_router');
 const contact_router = require('./Routers/contact_router');
 const task_router = require('./Routers/task_router');
 const mail_router = require('./Routers/mail_router');
+const accounts_router = require('./Routers/accounts_router');
+const gmail_router = require('./Routers/gmail_router');
 
 const allowedOrigins = [
   "https://brightfuturesoft.com",
@@ -45,6 +47,8 @@ app.use(cors({
 app.options("*", cors());
 
 
+// Mail with attachments is base64 in JSON: raise the limit for this route only (must come before the global parser).
+app.use('/api/v1/mail/gmail', express.json({ limit: '30mb' }));
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -72,7 +76,9 @@ app.use('/api/v1/project', project_router);
 app.use('/api/v1/subscriber', subcriber_router);
 app.use('/api/v1/contact', contact_router);
 app.use('/api/v1/task', task_router);
+app.use('/api/v1/mail/gmail', gmail_router);
 app.use('/api/v1/mail', mail_router);
+app.use('/api/v1/accounts', accounts_router);
 app.use('/api/v2/image', imageRouter2);
 
 

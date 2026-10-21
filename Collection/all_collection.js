@@ -29,9 +29,26 @@ const notice_collection = client.db("notice").collection("notice");
 const contact_collection = client.db("contact").collection("contact");
 const subscriber_collection = client.db("contact").collection("subscriber");
 const client_meeting_collection = client.db("administrator").collection("client_meeting");
-
+const acc_clients_collection = client.db("accounts").collection("clients");
+const acc_invoices_collection = client.db("accounts").collection("invoices");
+const acc_payslips_collection = client.db("accounts").collection("payslips");
+const acc_salary_profiles_collection = client.db("accounts").collection("salary_profiles");
+const acc_expenses_collection = client.db("accounts").collection("expenses");
+const mail_settings_collection = client.db("accounts").collection("mail_settings");
+const mail_sent_collection = client.db("accounts").collection("sent_mails");
+const gmail_accounts_collection = client.db("accounts").collection("gmail_accounts");
+const acc_counters_collection = client.db("accounts").collection("counters");
 
 module.exports = {
+      mail_settings_collection,
+      mail_sent_collection,
+      gmail_accounts_collection,
+      acc_clients_collection,
+      acc_invoices_collection,
+      acc_payslips_collection,
+      acc_salary_profiles_collection,
+      acc_expenses_collection,
+      acc_counters_collection,
       meeting_collection,
       images_collection,
       user_collection,
