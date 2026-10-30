@@ -5,6 +5,14 @@ const { blogs_collection } = require("../Collection/all_collection");
 const add_blog = async (req, res, next) => {
     const body = req.body;
 
+    if (!body || !body.title || !body.message) {
+        return res.status(400).send({
+            success: false,
+            message: 'Title and message are required',
+            request_time: new Date().getTime()
+        });
+    }
+
     try {
 
         const result = await blogs_collection.insertOne(body);
@@ -12,7 +20,7 @@ const add_blog = async (req, res, next) => {
         res.send({
             success: true,
             message: 'Words added successfully',
-            data: result.ops,
+            data: { _id: result.insertedId },
             request_time: new Date().getTime()
         });
 
@@ -37,8 +45,23 @@ const all_blog = async (req, res, next) => {
 
 const delete_blog = async (req, res, next) => {
     const id = req.query.blog_id;
+    if (!ObjectId.isValid(id)) {
+        return res.status(400).send({
+            success: false,
+            message: 'Invalid blog id',
+            request_time: new Date().getTime()
+        });
+    }
     try {
         const result = await blogs_collection.deleteOne({ _id: new ObjectId(id) });
+
+        if (result.deletedCount !== 1) {
+            return res.status(404).send({
+                success: false,
+                message: 'Blog not found',
+                request_time: new Date().getTime()
+            });
+        }
 
         res.send({
             success: true,
@@ -53,10 +76,17 @@ const delete_blog = async (req, res, next) => {
 
 const update_blog = async (req, res, next) => {
     const id = req.query.blog_id;
-    const body = req.body;
+    const { _id, ...body } = req.body || {};
+    if (!ObjectId.isValid(id)) {
+        return res.status(400).send({
+            success: false,
+            message: 'Invalid blog id',
+            request_time: new Date().getTime()
+        });
+    }
     try {
         const result = await blogs_collection.updateOne({ _id: new ObjectId(id) }, { $set: { ...body } });
-        if (result.modifiedCount === 1) {
+        if (result.matchedCount === 1) {
             res.send({
                 success: true,
                 message: 'Blog updated successfully',

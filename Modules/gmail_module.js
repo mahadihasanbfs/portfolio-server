@@ -1,4 +1,3 @@
-require("dotenv").config();
 const fetch = require("node-fetch");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
@@ -13,7 +12,8 @@ const SCOPES = [
       "https://www.googleapis.com/auth/gmail.send",
 ];
 
-// Google OAuth client values come from .env (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET).
+// Secrets come from .env (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GMAIL_ENC_KEY); never hardcode them.
+require("dotenv").config();
 const IS_PROD = process.env.NODE_ENV === "production";
 const CONFIG = {
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -30,7 +30,7 @@ const CONFIG = {
       companyDomain: "brightfuturesoft.com",
       // Used as the sender when an employee's own login email is not on the company domain.
       fallbackFrom: "no-reply@brightfuturesoft.com",
-      encKey: "c8e0d2b1267e04f1a1ca7a5b8bd4e5166e7d22706a4efe3ec8d3c36bbfb9d0fd",
+      encKey: process.env.GMAIL_ENC_KEY,
 };
 
 const env = () => CONFIG;

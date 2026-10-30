@@ -1,268 +1,573 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API Documentation</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bright Future Soft API</title>
+<meta name="description" content="REST API reference for the Bright Future Soft backend." />
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --panel2: #f0f2f5; --line: #e2e5ea;
+    --text: #14181f; --muted: #626b7a; --accent: #4f46e5; --accent-soft: #eef0ff;
+    --code-bg: #0f172a; --code-text: #e2e8f0;
+    --get: #0a7d4f; --get-bg: #e3f6ec;
+    --post: #1d5fd1; --post-bg: #e4eeff;
+    --put: #b46300; --put-bg: #fff0d9;
+    --patch: #7a3fd1; --patch-bg: #f0e8ff;
+    --delete: #c1272d; --delete-bg: #fde7e8;
+    --shadow: 0 1px 2px rgba(16,24,40,.05);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1017; --panel: #151a23; --panel2: #1b212c; --line: #262d3a;
+    --text: #e8ebf1; --muted: #8f99aa; --accent: #8b87ff; --accent-soft: #1f2140;
+    --code-bg: #0a0d13; --code-text: #d7dde8;
+    --get: #4ade9a; --get-bg: #12301f;
+    --post: #6aa5ff; --post-bg: #14264a;
+    --put: #ffb454; --put-bg: #3a2810;
+    --patch: #c19bff; --patch-bg: #2a1d45;
+    --delete: #ff7b80; --delete-bg: #3d1618;
+    --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  }
+  code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  a { color: var(--accent); text-decoration: none; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+
+  /* top bar */
+  .top {
+    position: sticky; top: 0; z-index: 20; height: 60px;
+    display: flex; align-items: center; gap: 14px; padding: 0 20px;
+    background: var(--panel); border-bottom: 1px solid var(--line);
+  }
+  .brand { font-weight: 700; letter-spacing: -.01em; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+  .brand i { width: 26px; height: 26px; border-radius: 7px; background: var(--accent); display: grid; place-items: center; color: #fff; font-style: normal; font-size: 13px; }
+  .ver { font-size: 12px; color: var(--muted); background: var(--panel2); padding: 2px 8px; border-radius: 99px; }
+  .search { flex: 1; max-width: 460px; margin-left: auto; position: relative; }
+  .search input {
+    width: 100%; height: 38px; padding: 0 12px 0 36px; border-radius: 9px;
+    border: 1px solid var(--line); background: var(--panel2); color: var(--text); font: inherit; outline: none;
+  }
+  .search input:focus { border-color: var(--accent); background: var(--panel); }
+  .search svg { position: absolute; left: 11px; top: 10px; width: 17px; height: 17px; stroke: var(--muted); }
+  .search kbd { position: absolute; right: 9px; top: 8px; font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; background: var(--panel); }
+  .iconbtn { height: 38px; width: 38px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel); display: grid; place-items: center; }
+  .iconbtn:hover { background: var(--panel2); }
+  .menu { display: none; }
+
+  /* layout */
+  .wrap { display: grid; grid-template-columns: 264px minmax(0, 1fr); max-width: 1280px; margin: 0 auto; }
+  nav.side {
+    position: sticky; top: 60px; align-self: start; height: calc(100vh - 60px); overflow-y: auto;
+    padding: 20px 14px 40px 20px; border-right: 1px solid var(--line);
+  }
+  nav.side h6 { margin: 18px 10px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  nav.side h6:first-child { margin-top: 0; }
+  nav.side a {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 6px 10px; border-radius: 7px; color: var(--text); font-size: 14px;
+  }
+  nav.side a:hover { background: var(--panel2); }
+  nav.side a.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  nav.side a span { font-size: 11px; color: var(--muted); background: var(--panel2); border-radius: 99px; padding: 0 7px; }
+
+  main { padding: 28px 32px 80px; min-width: 0; }
+  h1 { font-size: 30px; letter-spacing: -.02em; margin: 0 0 6px; }
+  h2.group { font-size: 22px; letter-spacing: -.01em; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 22px; max-width: 70ch; }
+  section.group { margin-top: 44px; }
+  .gdesc { color: var(--muted); margin: 0 0 14px; }
+  .gbase { display: inline-block; margin-bottom: 14px; font-size: 13px; color: var(--muted); }
+  .gbase code { background: var(--panel2); padding: 2px 7px; border-radius: 6px; color: var(--text); }
+
+  /* cards */
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+  .intro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 16px; }
+  .intro-grid .card { padding: 16px 18px; }
+  .intro-grid h3 { margin: 0 0 6px; font-size: 14px; }
+  .intro-grid p { margin: 0; color: var(--muted); font-size: 14px; }
+  .urlrow { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .urlrow select, .urlrow input {
+    height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2);
+    color: var(--text); padding: 0 10px; font-size: 13px; min-width: 0;
+  }
+  .urlrow input { flex: 1; }
+
+  table.t { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.t th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--panel2); }
+  table.t td { padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.t tr:last-child td { border-bottom: 0; }
+  .tablewrap { overflow-x: auto; border-radius: 12px; }
+
+  /* endpoint */
+  .ep { margin-bottom: 10px; overflow: hidden; }
+  .ep > summary {
+    list-style: none; display: flex; align-items: center; gap: 12px; padding: 11px 14px; cursor: pointer;
+  }
+  .ep > summary::-webkit-details-marker { display: none; }
+  .ep > summary:hover { background: var(--panel2); }
+  .ep[open] > summary { border-bottom: 1px solid var(--line); }
+  .m { font: 700 11.5px ui-monospace, Menlo, monospace; min-width: 62px; text-align: center; padding: 4px 0; border-radius: 6px; letter-spacing: .03em; }
+  .m.GET { color: var(--get); background: var(--get-bg); }
+  .m.POST { color: var(--post); background: var(--post-bg); }
+  .m.PUT { color: var(--put); background: var(--put-bg); }
+  .m.PATCH { color: var(--patch); background: var(--patch-bg); }
+  .m.DELETE { color: var(--delete); background: var(--delete-bg); }
+  .path { font-size: 13.5px; font-weight: 600; word-break: break-all; }
+  .path em { font-style: normal; color: var(--accent); }
+  .sum { color: var(--muted); font-size: 13.5px; margin-left: auto; text-align: right; }
+  .chev { width: 16px; height: 16px; stroke: var(--muted); flex: none; transition: transform .15s; }
+  .ep[open] .chev { transform: rotate(90deg); }
+  .auth { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .auth.public { color: var(--get); border-color: transparent; background: var(--get-bg); }
+  .auth.author { color: var(--put); border-color: transparent; background: var(--put-bg); }
+  .auth.jwt { color: var(--post); border-color: transparent; background: var(--post-bg); }
+  .auth.admin { color: var(--delete); border-color: transparent; background: var(--delete-bg); }
+
+  .body { padding: 14px 16px 18px; display: grid; gap: 16px; }
+  .body h5 { margin: 0 0 6px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .params { border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .params .row { display: grid; grid-template-columns: 150px 80px 1fr; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 13.5px; align-items: baseline; }
+  .params .row:last-child { border-bottom: 0; }
+  .params .n { font-weight: 600; }
+  .tag { font-size: 11px; color: var(--muted); }
+  .tag.req { color: var(--delete); font-weight: 600; }
+  .note { background: var(--put-bg); color: var(--text); border-left: 3px solid var(--put); padding: 8px 12px; border-radius: 6px; font-size: 13.5px; }
+  .code { position: relative; }
+  .code pre { margin: 0; background: var(--code-bg); color: var(--code-text); padding: 14px 16px; border-radius: 9px; overflow-x: auto; font-size: 12.8px; line-height: 1.6; }
+  .copy { position: absolute; top: 8px; right: 8px; font-size: 12px; padding: 3px 10px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #cbd5e1; }
+  .copy:hover { background: #334155; }
+  .tok-k { color: #93c5fd; } .tok-s { color: #86efac; } .tok-c { color: #94a3b8; }
+
+  .ok { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 6px; margin-right: 6px; }
+  .s2 { color: var(--get); background: var(--get-bg); } .s4 { color: var(--delete); background: var(--delete-bg); } .s5 { color: var(--put); background: var(--put-bg); }
+  .empty { text-align: center; color: var(--muted); padding: 60px 0; display: none; }
+
+  .issues li { margin-bottom: 8px; }
+  footer { color: var(--muted); font-size: 13px; padding: 30px 0 0; }
+
+  @media (max-width: 900px) {
+    .wrap { grid-template-columns: 1fr; }
+    nav.side { position: fixed; z-index: 30; top: 60px; left: 0; bottom: 0; width: 280px; height: auto; background: var(--panel); transform: translateX(-100%); transition: transform .2s; }
+    nav.side.open { transform: none; box-shadow: 0 0 40px rgba(0,0,0,.3); }
+    .menu { display: grid; }
+    main { padding: 22px 16px 70px; }
+    .sum { display: none; }
+    .params .row { grid-template-columns: 1fr; gap: 2px; }
+    .kbd { display: none; }
+  }
+</style>
 </head>
+<body>
 
-<body class="bg-gray-100 text-gray-900">
-  <div class="container mx-auto p-8">
-    <h1 class="text-4xl font-bold mb-8 text-center">API Documentation</h1>
-
-    <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
-      <h2 class="text-2xl font-semibold mb-4">Blog Management</h2>
-
-      <div class="mb-4">
-        <div class="font-bold text-lg text-blue-600">
-          POST <span>/api/blogs</span>
-        </div>
-        <div class="italic">Add a new blog post</div>
-        <div class="mt-2">
-          <h3 class="font-semibold">Parameters</h3>
-          <pre class="bg-gray-200 p-4 rounded mt-2">
-{
-  "title": "string",
-  "content": "string",
-  "author": "string"
-}
-                    </pre>
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <div class="font-bold text-lg text-blue-600">
-          PUT <span>/api/blogs/:id</span>
-        </div>
-        <div class="italic">Edit an existing blog post</div>
-        <div class="mt-2">
-          <h3 class="font-semibold">Parameters</h3>
-          <pre class="bg-gray-200 p-4 rounded mt-2">
-{
-  "title": "string",
-  "content": "string",
-  "author": "string"
-}
-                    </pre>
-        </div>
-      </div>
-
-      <div>
-        <div class="font-bold text-lg text-blue-600">
-          DELETE <span>/api/blogs/:id</span>
-        </div>
-        <div class="italic">Delete a blog post</div>
-      </div>
-    </div>
-
-    <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
-      <h2 class="text-2xl font-semibold mb-4">User Management</h2>
-
-      <div class="mb-4">
-        <div class="font-bold text-lg text-blue-600">
-          POST <span>/api/users</span>
-        </div>
-        <div class="italic">Add a new user</div>
-        <div class="mt-2">
-          <h3 class="font-semibold">Parameters</h3>
-          <pre class="bg-gray-200 p-4 rounded mt-2">
-{
-  "name": "string",
-  "email": "string",
-  "password": "string"
-}
-                    </pre>
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <div class="font-bold text-lg text-blue-600">
-          PUT <span>/api/users/:id</span>
-        </div>
-        <div class="italic">Update an existing user</div>
-        <div class="mt-2">
-          <h3 class="font-semibold">Parameters</h3>
-          <pre class="bg-gray-200 p-4 rounded mt-2">
-{
-  "name": "string",
-  "email": "string"
-}
-                    </pre>
-        </div>
-      </div>
-
-      <div>
-        <div class="font-bold text-lg text-blue-600">
-          DELETE <span>/api/users/:id</span>
-        </div>
-        <div class="italic">Delete a user</div>
-      </div>
-    </div>
-
-    <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
-      <h2 class="text-2xl font-semibold mb-4">Job Offers</h2>
-
-      <div class="mb-4">
-        <div class="font-bold text-lg text-blue-600">
-          POST <span>/api/jobs</span>
-        </div>
-        <div class="italic">Add a new job offer</div>
-        <div class="mt-2">
-          <h3 class="font-semibold">Parameters</h3>
-          <pre class="bg-gray-200 p-4 rounded mt-2">
-{
-  "title": "string",
-  "description": "string",
-  "location": "string",
-  "salary": "number"
-}
-                    </pre>
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <div class="font-bold text-lg text-blue-600">
-          PUT <span>/api/jobs/:id</span>
-        </div>
-        <div class="italic">Edit an existing job offer</div>
-        <div class="mt-2">
-          <h3 class="font-semibold">Parameters</h3>
-          <pre class="bg-gray-200 p-4 rounded mt-2">
-{
-  "title": "string",
-  "description": "string",
-  "location": "string",
-  "salary": "number"
-}
-                    </pre>
-        </div>
-      </div>
-
-      <div>
-        <div class="font-bold text-lg text-blue-600">
-          DELETE <span>/api/jobs/:id</span>
-        </div>
-        <div class="italic">Delete a job offer</div>
-      </div>
-    </div>
-
-    <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
-      <h2 class="text-2xl font-semibold mb-4">Job Applications</h2>
-
-      <div class="mb-4">
-        <div class="font-bold text-lg text-blue-600">
-          POST <span>/api/applications</span>
-        </div>
-        <div class="italic">Submit a job application</div>
-        <div class="mt-2">
-          <h3 class="font-semibold">Parameters</h3>
-          <pre class="bg-gray-200 p-4 rounded mt-2">
-{
-  "jobId": "string",
-  "applicantName": "string",
-  "applicantEmail": "string",
-  "resume": "string"
-}
-                    </pre>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
-      <h2 class="text-2xl font-semibold mb-4">Projects</h2>
-
-      <div class="mb-4">
-        <div class="font-bold text-lg text-blue-600">
-          POST <span>/api/projects</span>
-        </div>
-        <div class="italic">Add a new project</div>
-        <div class="mt-2">
-          <h3 class="font-semibold">Parameters</h3>
-          <pre class="bg-gray-200 p-4 rounded mt-2">
-{
-  "name": "string",
-  "description": "string",
-  "startDate": "string",
-  "endDate": "string"
-}
-                    </pre>
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <div class="font-bold text-lg text-blue-600">
-          PUT <span>/api/projects/:id</span>
-        </div>
-        <div class="italic">Edit an existing project</div>
-        <div class="mt-2">
-          <h3 class="font-semibold">Parameters</h3>
-          <pre class="bg-gray-200 p-4 rounded mt-2">
-{
-  "name": "string",
-  "description": "string",
-  "startDate": "string",
-  "endDate": "string"
-}
-                    </pre>
-        </div>
-      </div>
-
-      <div>
-        <div class="font-bold text-lg text-blue-600">
-          DELETE <span>/api/projects/:id</span>
-        </div>
-        <div class="italic">Delete a project</div>
-      </div>
-    </div>
-
-    <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
-      <h2 class="text-2xl font-semibold mb-4">Tasks</h2>
-
-      <div class="mb-4">
-        <div class="font-bold text-lg text-blue-600">
-          POST <span>/api/tasks</span>
-        </div>
-        <div class="italic">Add a new task</div>
-        <div class="mt-2">
-          <h3 class="font-semibold">Parameters</h3>
-          <pre class="bg-gray-200 p-4 rounded mt-2">
-{
-  "projectId": "string",
-  "title": "string",
-  "description": "string",
-  "status": "string"
-}
-                    </pre>
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <div class="font-bold text-lg text-blue-600">
-          PUT <span>/api/tasks/:id</span>
-        </div>
-        <div class="italic">Edit an existing task</div>
-        <div class="mt-2">
-          <h3 class="font-semibold">Parameters</h3>
-          <pre class="bg-gray-200 p-4 rounded mt-2">
-{
-  "title": "string",
-  "description": "string",
-  "status": "string"
-}
-                    </pre>
-        </div>
-      </div>
-
-      <div>
-        <div class="font-bold text-lg text-blue-600">
-          DELETE <span>/api/tasks/:id</span>
-        </div>
-        <div class="italic">Delete a task</div>
-      </div>
-    </div>
+<header class="top">
+  <button class="iconbtn menu" id="menu" aria-label="Menu">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+  <div class="brand"><i>B</i> Bright Future Soft <span class="ver">API v1</span></div>
+  <div class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Search endpoints, paths, fields…" autocomplete="off" />
+    <kbd class="kbd">/</kbd>
   </div>
-</body>
+  <button class="iconbtn" id="logout" aria-label="Sign out" title="Sign out">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+  </button>
+  <button class="iconbtn" id="theme" aria-label="Toggle theme">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+  </button>
+</header>
 
+<div class="wrap">
+  <nav class="side" id="side"></nav>
+
+  <main>
+    <section id="overview">
+      <h1>API Reference</h1>
+      <p class="lead">REST API for the Bright Future Soft website, dashboard, mail and accounts. JSON in, JSON out. Click any endpoint to see inputs and a ready-to-run <code>curl</code>.</p>
+
+      <div class="intro-grid">
+        <div class="card">
+          <h3>Base URL</h3>
+          <p>All routes live under <code>/api/v1</code> (images also <code>/api/v2</code>).</p>
+          <div class="urlrow">
+            <select id="env">
+              <option value="http://localhost:5010">Local</option>
+              <option value="">This server</option>
+              <option value="custom">Custom…</option>
+            </select>
+            <input id="base" class="mono" spellcheck="false" />
+          </div>
+        </div>
+        <div class="card">
+          <h3>Format</h3>
+          <p>Send <code>Content-Type: application/json</code>. Image upload is <code>multipart/form-data</code>. Gmail send accepts up to 30 MB (base64 attachments). Most "by id" endpoints take the Mongo <code>_id</code> as a <b>query parameter</b>.</p>
+        </div>
+        <div class="card">
+          <h3>CORS</h3>
+          <p>Allowed origins: <code>brightfuturesoft.com</code>, <code>www.brightfuturesoft.com</code>, <code>localhost:5173</code>.</p>
+        </div>
+      </div>
+
+      <h2 class="group" id="authentication" style="margin-top:34px">Authentication</h2>
+      <p class="gdesc">Every endpoint shows one of four access levels.</p>
+      <div class="card tablewrap">
+        <table class="t">
+          <tr><th>Level</th><th>How to call</th><th>Used for</th></tr>
+          <tr><td><span class="auth public">public</span></td><td>No header.</td><td>Website reads, contact form, job apply</td></tr>
+          <tr><td><span class="auth author">author</span></td><td><code>author: bright_future_soft</code> header (static shared key)</td><td>Dashboard CRUD</td></tr>
+          <tr><td><span class="auth jwt">jwt</span></td><td><code>Authorization: Bearer &lt;token&gt;</code>, token from sign-in</td><td>Gmail, own payslips</td></tr>
+          <tr><td><span class="auth admin">admin</span></td><td>Same as <code>jwt</code>, user designation must be <code>Chief Executive Officer</code> or <code>manager</code></td><td>Accounts module</td></tr>
+        </table>
+      </div>
+
+      <h2 class="group" id="responses" style="margin-top:34px">Responses &amp; errors</h2>
+      <div class="code" style="margin:10px 0 14px"><button class="copy">Copy</button><pre>{ "success": true,  "message": "...", "data": { }, "request_time": 1730000000000 }
+{ "success": false, "message": "...", "request_time": 1730000000000 }</pre></div>
+      <div class="card tablewrap">
+        <table class="t">
+          <tr><th>Status</th><th>Meaning</th></tr>
+          <tr><td><span class="ok s2">200</span></td><td>Success</td></tr>
+          <tr><td><span class="ok s4">400</span></td><td>Validation failed or missing field</td></tr>
+          <tr><td><span class="ok s4">401</span></td><td><code>jwt</code>: missing, invalid or expired token; bad sign-in credentials</td></tr>
+          <tr><td><span class="ok s4">403</span></td><td><code>admin</code>: user is not an admin</td></tr>
+          <tr><td><span class="ok s4">404</span></td><td>Unknown route (<code>API Not Found</code>) or record missing</td></tr>
+          <tr><td><span class="ok s4">410</span></td><td>Job application deadline passed</td></tr>
+          <tr><td><span class="ok s5">500</span></td><td>Unhandled server error</td></tr>
+        </table>
+      </div>
+      <p class="gdesc" style="margin-top:10px">Note: a missing or wrong <code>author</code> header returns HTTP <b>200</b> with <code>{ "success": false, "message": "Unauthorized" }</code>, not 401.</p>
+    </section>
+
+    <div id="groups"></div>
+    <div class="empty" id="empty">No endpoints match your search.</div>
+
+    <section class="group" id="known-issues">
+      <h2 class="group">Known issues</h2>
+      <p class="gdesc">Found while documenting. Worth fixing.</p>
+      <div class="card" style="padding:14px 20px 6px">
+        <ol class="issues">
+          <li>The <code>author</code> key is a static shared secret; anyone with the frontend bundle has it.</li>
+          <li><code>JWT_SECRET</code> is hardcoded as <code>'your_jwt_secret_key'</code> in <code>Middleware/admin_only.js</code>. Move it to <code>.env</code>.</li>
+          <li><code>POST /image/upload-image</code> has no auth.</li>
+          <li>Task get-by-id and get-by-assignedTo read path params the routes never define.</li>
+          <li>Project update/delete are mounted at <code>/update-blog</code> and <code>/delete-blog</code>.</li>
+          <li>Run on Node 24 or lower: a dependency crashes on Node 25+ (<code>SlowBuffer</code> removed).</li>
+        </ol>
+      </div>
+    </section>
+    <footer>Generated from <code>Routers/*.js</code>. Keep the <code>GROUPS</code> array at the bottom of this file in sync with the routers.</footer>
+  </main>
+</div>
+
+<script>
+/* ---------- data ----------
+   f = field list. Suffix "*" = required. "name:hint" sets the example value.
+   a = auth: public | author | jwt | admin                                    */
+const G = (id, title, base, desc, eps) => ({ id, title, base, desc, eps });
+const E = (m, p, a, sum, o = {}) => ({ m, p, a, sum, ...o });
+
+const GROUPS = [
+G('auth','Auth','/api/v1/auth','Sign up, sign in and manage users.',[
+  E('POST','/sign-up','public','Create a user',{body:['name*','email*','password*','designation','image']}),
+  E('POST','/sign-in','author','Sign in, returns a JWT',{body:['email*','password*'],res:{success:true,message:'Signed in',token:'<jwt>',data:{_id:'...',name:'...',designation:'...'}}}),
+  E('POST','/forget-password','public','Send reset email',{body:['email*']}),
+  E('POST','/reset-password','public','Reset password with emailed token',{query:['token*'],body:['password*']}),
+  E('GET','/all','author','List users',{query:['email']}),
+  E('PUT','/update-user-data','author','Update profile',{query:['user_id*'],body:['name','phone','linkedin','dob','designation','image']}),
+  E('PUT','/update-user-password','author','Change password',{query:['user_id*'],body:['old_password*','new_password*']}),
+  E('DELETE','/delete/:id','author','Delete a user',{path:['id*']}),
+]),
+G('blog','Blog','/api/v1/blog','Blog posts.',[
+  E('GET','/get-blog','public','List all blogs'),
+  E('GET','/get-blog-by-id','public','Get one blog',{query:['blog_id*']}),
+  E('POST','/add-blog','author','Create a blog',{body:['title*','content*','image','author_name']}),
+  E('PUT','/update-blog','author','Update a blog',{query:['blog_id*'],body:['title','content','image']}),
+  E('DELETE','/delete-blog','author','Delete a blog',{query:['blog_id*']}),
+]),
+G('project','Projects','/api/v1/project','Portfolio projects.',[
+  E('GET','/get-project','public','List all projects'),
+  E('GET','/get-project-by-id','public','Get one project',{query:['project_id*']}),
+  E('POST','/add-project','author','Create a project',{body:['title*','description','image','link']}),
+  E('PUT','/update-blog','author','Update a project',{query:['project_id*'],body:['title','description','image','link'],note:'Mounted at /update-blog in project_router.js (copy-paste name). Works on projects.'}),
+  E('DELETE','/delete-blog','author','Delete a project',{query:['project_id*'],note:'Mounted at /delete-blog in project_router.js (copy-paste name). Works on projects.'}),
+]),
+G('job','Jobs','/api/v1/job-post','Job posts and applications.',[
+  E('GET','/all-job','public','List job posts'),
+  E('GET','/get-job-by-id','public','Get one job post',{query:['job_post_id*']}),
+  E('POST','/add-job','author','Create a job post',{body:['title*','description','dateline:2026-12-31']}),
+  E('PUT','/update-job','author','Update a job post',{query:['job_post_id*'],body:['title','description','dateline:2026-12-31']}),
+  E('DELETE','/delete-job','author','Delete a job post',{query:['job_post_id*']}),
+  E('POST','/apply-job','public','Apply to a job',{body:['job_post_id*','full_name*','email_address*','resume*'],note:'Returns 410 when the job deadline (dateline) has passed. Only known application fields are stored.'}),
+  E('GET','/get-job-apply','public','List applications, filter by any field',{query:['job_post_id','email_address']}),
+  E('PUT','/update-job-apply','author','Update an application (e.g. status)',{query:['job_apply_id*'],body:['status']}),
+  E('DELETE','/delete-job-apply','author','Delete an application',{query:['job_apply_id*']}),
+]),
+G('issue','Issues','/api/v1/issue','Internal issue tracker. Issue numbers auto-increment.',[
+  E('GET','/get-issue-by-id','public','Get one issue',{query:['issue_id*']}),
+  E('GET','/get-issue','author','List issues by author',{query:['author_name']}),
+  E('POST','/add-issue','author','Create an issue',{body:['author_name*','subject*','status*','body*','issue_date:1730000000000'],note:'No other keys are allowed (Joi unknown(false)).'}),
+  E('PUT','/update-issue','author','Update an issue',{query:['issue_id*'],body:['status','subject','body']}),
+  E('DELETE','/delete-issue','author','Delete an issue',{query:['issue_id*']}),
+]),
+G('notice','Notices','/api/v1/notice','Company notices.',[
+  E('GET','/get-notice','public','List notices'),
+  E('GET','/get-notice-by-id','public','Get one notice',{query:['notice_id*']}),
+  E('POST','/add-notice','author','Create a notice',{body:['subject*','body*','notice_date:1730000000000'],note:'No other keys are allowed.'}),
+  E('DELETE','/delete-notice','author','Delete a notice',{query:['notice_id*']}),
+]),
+G('meeting','Meetings','/api/v1/meeting','Team and client meetings.',[
+  E('GET','/get-meetings','public','List meetings',{query:['email']}),
+  E('POST','/add-meeting','author','Create a meeting and email invites',{body:['title*','agenda','date*','duration','link','selectedUsers:[{"email":"a@b.com"}]'],note:'Sends an invite to every user in selectedUsers.'}),
+  E('PUT','/edit-meeting','author','Edit a meeting',{query:['meeting_id*'],body:['title','agenda','date','duration','link']}),
+  E('DELETE','/delete-meeting','author','Delete a meeting',{query:['meeting_id*']}),
+  E('GET','/get-client-meeting','public','List client meetings'),
+  E('POST','/add-client-meeting','author','Create a client meeting',{body:['title*','date*','client_name','link']}),
+  E('PUT','/edit-client-meeting','author','Edit a client meeting',{query:['client_meeting_id*'],body:['title','date','client_name','link']}),
+  E('DELETE','/delete-client-meeting','author','Delete a client meeting',{query:['client_meeting_id*']}),
+]),
+G('task','Tasks','/api/v1/task','Task board.',[
+  E('GET','/get-task','public','List tasks'),
+  E('GET','/get-task-by-id','public','Get one task',{note:'Handler reads req.params.id but the route defines no :id, so it is undefined. Fix the router before relying on this.'}),
+  E('GET','/get-task-by-assignedTo','public','Tasks for an assignee',{note:'Handler reads req.params.assignedTo but the route defines no :assignedTo. Fix the router before relying on this.'}),
+  E('POST','/add-task','author','Create a task',{body:['title*','description','assignedTo','status','priority','due_date']}),
+  E('PUT','/update-task','author','Update a task',{query:['id*'],body:['title','status','assignedTo','priority']}),
+  E('DELETE','/delete-task','author','Delete a task',{query:['id*']}),
+]),
+G('contact','Contact','/api/v1/contact','Website contact form.',[
+  E('GET','/get-contacts','public','List contact messages'),
+  E('POST','/add-contact','public','Submit contact form',{body:['full_name*','email_or_phone*','message*','time_stamp*:1730000000000']}),
+  E('PUT','/update-contact','author','Update a contact',{query:['contact_id*'],body:['status']}),
+  E('DELETE','/delete-contact','author','Delete a contact',{query:['contact_id*']}),
+]),
+G('subscriber','Subscribers','/api/v1/subscriber','Newsletter subscribers.',[
+  E('GET','/get-subscribers','author','List subscribers'),
+  E('POST','/add-subscriber','public','Subscribe',{body:['email*']}),
+  E('PUT','/update-subscriber','author','Update a subscriber',{query:['subscriber_id*'],body:['email']}),
+  E('DELETE','/delete-subscriber','author','Delete a subscriber',{query:['subscriber_id*']}),
+]),
+G('image','Images','/api','Upload and serve images/PDFs (cloud stored).',[
+  E('POST','/api/v1/image/upload-image','public','Upload an image or PDF',{full:true,form:['image*:@photo.jpg','title'],note:'multipart/form-data. Stored in cloud folder bright_future_soft. No auth on this route.'}),
+  E('GET','/api/v1/image/:id','public','Get image by id',{full:true,path:['id*']}),
+  E('GET','/api/v1/image/blur/:id','public','Get blurred image',{full:true,path:['id*']}),
+  E('GET','/api/v2/image/:id','public','Get image by id (v2)',{full:true,path:['id*']}),
+]),
+G('mail','Mail (legacy)','/api/v1/mail','Legacy inbox and sent mail. All routes need the author header.',[
+  E('GET','/get-all-mail','author','List inbox',{query:['email*']}),
+  E('GET','/email/:id','author','Get one email',{path:['id*']}),
+  E('POST','/send-mail','author','Send mail',{body:['to*','subject*','text','htmlContent','cc','bcc']}),
+  E('GET','/sent-mail','author','List sent mail'),
+  E('PUT','/email/:id/read','author','Mark as read',{path:['id*']}),
+  E('PUT','/email/:id/star','author','Toggle star',{path:['id*']}),
+  E('GET','/search','author','Search mail',{query:['query*','email']}),
+  E('GET','/stats','author','Mailbox stats'),
+  E('POST','/send-mail/candidate','author','Email a job candidate',{body:['sender*','to*','subject*','htmlContent','textContent']}),
+]),
+G('gmail','Gmail','/api/v1/mail/gmail','Each employee links their own Google mailbox. All routes need a JWT except the OAuth callback.',[
+  E('GET','/callback','public','Google OAuth redirect target',{query:['code','state','error'],note:'Called by Google, not by your app. Identity comes from the signed state value.'}),
+  E('GET','/status','jwt','Is Gmail linked?'),
+  E('GET','/auth-url','jwt','Get Google consent URL',{query:['popup:1']}),
+  E('DELETE','/disconnect','jwt','Unlink Gmail'),
+  E('GET','/settings','jwt','Get mail settings'),
+  E('PUT','/settings','jwt','Save mail settings',{body:['resendKey']}),
+  E('DELETE','/settings','jwt','Delete mail settings'),
+  E('GET','/unread','jwt','Unread count',{query:['q','pageToken']}),
+  E('POST','/batch','jwt','Bulk modify messages',{body:['ids*:["id1","id2"]','read:true','starred','trash']}),
+  E('POST','/mark-all-read','jwt','Mark a folder read',{body:['folder:inbox']}),
+  E('GET','/messages','jwt','List messages',{query:['folder:inbox','q','pageToken','unread']}),
+  E('GET','/messages/:id','jwt','Get one message',{path:['id*']}),
+  E('GET','/messages/:id/attachments/:attId','jwt','Download attachment',{path:['id*','attId*'],query:['name']}),
+  E('POST','/messages','jwt','Send a message',{body:['to*','subject*','html','text','cc','bcc','threadId','inReplyTo','references','attachments:[{"filename":"a.pdf","data":"<base64>"}]']}),
+  E('PUT','/messages/:id','jwt','Mark read / star',{path:['id*'],body:['read:true','starred']}),
+  E('DELETE','/messages/:id','jwt','Move to trash',{path:['id*']}),
+]),
+G('accounts','Accounts','/api/v1/accounts','Clients, invoices, payroll, expenses and reports. Admin only, except my-payslips.',[
+  E('GET','/my-payslips','jwt','Your own payslips (any signed-in employee)'),
+  E('GET','/clients','admin','List clients'),
+  E('POST','/clients','admin','Create client',{body:['name*','company','email','phone','address','notes']}),
+  E('PUT','/clients/:id','admin','Update client',{path:['id*'],body:['name','company','email','phone','address','notes']}),
+  E('DELETE','/clients/:id','admin','Delete client',{path:['id*']}),
+  E('GET','/invoices','admin','List invoices',{query:['clientId','kind','status']}),
+  E('GET','/invoices/:id','admin','Get invoice',{path:['id*']}),
+  E('POST','/invoices','admin','Create invoice',{body:['clientId*','kind','items','dueDate','notes'],note:'Allowed keys are INVOICE_KEYS in Modules/accounts_module.js.'}),
+  E('PUT','/invoices/:id','admin','Update invoice',{path:['id*'],body:['items','dueDate','notes']}),
+  E('DELETE','/invoices/:id','admin','Delete invoice',{path:['id*']}),
+  E('POST','/invoices/:id/cancel','admin','Cancel invoice',{path:['id*']}),
+  E('POST','/invoices/:id/restore','admin','Restore cancelled invoice',{path:['id*']}),
+  E('POST','/invoices/:id/payments','admin','Record payment',{path:['id*'],body:['amount*:1000','date','method','type','note'],note:'Rejected if amount exceeds the invoice balance.'}),
+  E('DELETE','/invoices/:id/payments/:paymentId','admin','Delete payment',{path:['id*','paymentId*']}),
+  E('GET','/employees','admin','List employees'),
+  E('GET','/salary-profiles','admin','List salary profiles'),
+  E('PUT','/salary-profiles/:employeeId','admin','Save salary profile',{path:['employeeId*'],body:['basic','allowances','bankAccount','joiningDate','pf']}),
+  E('GET','/payslips','admin','List payslips',{query:['month','employeeId','status']}),
+  E('POST','/payslips/generate','admin','Bulk generate payslips',{body:['month*:2026-10']}),
+  E('POST','/payslips','admin','Create one payslip',{body:['employeeId*','month*:2026-10','earnings','deductions','workingDays','absentDays','extraHours','notes','pf']}),
+  E('PUT','/payslips/:id','admin','Update payslip',{path:['id*'],body:['earnings','deductions','workingDays','absentDays','extraHours','notes','pf']}),
+  E('DELETE','/payslips/:id','admin','Delete payslip',{path:['id*']}),
+  E('POST','/payslips/:id/payments','admin','Record salary payment',{path:['id*'],body:['amount*:1000','date','method','type','note']}),
+  E('DELETE','/payslips/:id/payments/:paymentId','admin','Delete salary payment',{path:['id*','paymentId*']}),
+  E('GET','/provident-fund','admin','Provident fund summary'),
+  E('GET','/expenses','admin','List expenses'),
+  E('POST','/expenses','admin','Create expense',{body:['title*','amount*:500','category','date:2026-10-30','vendor','method','notes']}),
+  E('PUT','/expenses/:id','admin','Update expense',{path:['id*'],body:['title','amount','category','date','vendor','method','notes']}),
+  E('DELETE','/expenses/:id','admin','Delete expense',{path:['id*']}),
+  E('GET','/reports/summary','admin','Yearly summary report',{query:['year:2026']}),
+]),
+];
+
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const parse = f => { const m = f.match(/^([^:]+?)(\*)?(?::(.*))?$/); return { name: m[1], req: !!m[2], ex: m[3] }; };
+const exVal = p => {
+  if (p.ex !== undefined) { try { return JSON.parse(p.ex); } catch { return p.ex; } }
+  if (/email/i.test(p.name)) return 'user@example.com';
+  if (/(^|_)id$|Id$/.test(p.name)) return '64f1c0ffee00000000000000';
+  if (/date|time/i.test(p.name)) return '2026-10-30';
+  if (/password/i.test(p.name)) return '••••••••';
+  return 'string';
+};
+const BASE = () => ($('#base').value || location.origin).replace(/\/$/, '');
+const fullPath = (g, e) => e.full ? e.p : g.base + e.p;
+
+function curl(g, e) {
+  let url = BASE() + fullPath(g, e);
+  (e.path || []).forEach(x => { const p = parse(x); url = url.replace(':' + p.name, exVal(p)); });
+  if (e.query?.length) url += '?' + e.query.map(parse).map(p => `${p.name}=${encodeURIComponent(exVal(p))}`).join('&');
+  const L = [`curl -X ${e.m} '${url}'`];
+  if (e.a === 'author') L.push(`-H 'author: bright_future_soft'`);
+  if (e.a === 'jwt' || e.a === 'admin') L.push(`-H 'Authorization: Bearer <token>'`);
+  if (e.form) e.form.map(parse).forEach(p => L.push(`-F '${p.name}=${p.name === 'image' ? '@photo.jpg' : exVal(p)}'`));
+  else if (e.body) {
+    L.push(`-H 'Content-Type: application/json'`);
+    const o = {}; e.body.map(parse).forEach(p => o[p.name] = exVal(p));
+    L.push(`-d '${JSON.stringify(o, null, 2).replace(/'/g, "'\\''")}'`);
+  }
+  return L.join(' \\\n  ');
+}
+
+const hi = s => esc(s)
+  .replace(/(&quot;[^&]*?&quot;)(\s*:)/g, '<span class="tok-k">$1</span>$2')
+  .replace(/: (&quot;[^&]*?&quot;)/g, ': <span class="tok-s">$1</span>');
+
+function params(title, list) {
+  if (!list?.length) return '';
+  return `<div><h5>${title}</h5><div class="params">${list.map(parse).map(p =>
+    `<div class="row"><span class="n mono">${esc(p.name)}</span><span class="tag ${p.req ? 'req' : ''}">${p.req ? 'required' : 'optional'}</span><span class="tag">${p.ex !== undefined ? 'e.g. ' + esc(p.ex) : ''}</span></div>`).join('')}</div></div>`;
+}
+
+function renderEp(g, e) {
+  const path = fullPath(g, e).replace(/(:[A-Za-z]+)/g, '<em>$1</em>');
+  const out = document.createElement('details');
+  out.className = 'ep card';
+  out.dataset.s = (e.m + ' ' + fullPath(g, e) + ' ' + e.sum + ' ' + e.a + ' ' + [...(e.body||[]), ...(e.query||[]), ...(e.path||[])].join(' ')).toLowerCase();
+  out.innerHTML = `
+    <summary>
+      <span class="m ${e.m}">${e.m}</span>
+      <span class="path mono">${path}</span>
+      <span class="sum">${esc(e.sum)}</span>
+      <span class="auth ${e.a}">${e.a}</span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+    </summary>
+    <div class="body">
+      <div style="font-weight:600">${esc(e.sum)}</div>
+      ${e.note ? `<div class="note">${esc(e.note)}</div>` : ''}
+      ${params('Path parameters', e.path)}
+      ${params('Query parameters', e.query)}
+      ${params('Body (JSON)', e.body)}
+      ${params('Body (multipart form)', e.form)}
+      <div><h5>Example request</h5><div class="code"><button class="copy">Copy</button><pre class="curl"></pre></div></div>
+      ${e.res ? `<div><h5>Example response</h5><div class="code"><pre>${hi(JSON.stringify(e.res, null, 2))}</pre></div></div>` : ''}
+    </div>`;
+  const fill = () => { $('.curl', out).textContent = curl(g, e); };
+  out.addEventListener('toggle', () => out.open && fill());
+  out._fill = fill;
+  return out;
+}
+
+/* ---------- build ---------- */
+const side = $('#side'), host = $('#groups');
+side.innerHTML = `<h6>Guide</h6>
+  <a href="#overview">Overview</a><a href="#authentication">Authentication</a><a href="#responses">Responses &amp; errors</a>
+  <h6>Endpoints</h6>` +
+  GROUPS.map(g => `<a href="#${g.id}" data-g="${g.id}">${g.title}<span>${g.eps.length}</span></a>`).join('') +
+  `<h6>More</h6><a href="#known-issues">Known issues</a>`;
+
+GROUPS.forEach(g => {
+  const s = document.createElement('section');
+  s.className = 'group'; s.id = g.id;
+  s.innerHTML = `<h2 class="group">${g.title}</h2><p class="gdesc">${esc(g.desc)}</p>` +
+    (g.base !== '/api' ? `<div class="gbase">Base path <code>${g.base}</code></div>` : '');
+  g.eps.forEach(e => s.appendChild(renderEp(g, e)));
+  host.appendChild(s);
+});
+
+/* copy buttons */
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('.copy'); if (!b) return;
+  navigator.clipboard.writeText(b.nextElementSibling.textContent).then(() => {
+    b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1200);
+  });
+});
+
+/* search */
+const q = $('#q');
+function filter() {
+  const t = q.value.trim().toLowerCase(); let any = false;
+  host.querySelectorAll('section.group').forEach(sec => {
+    let n = 0;
+    sec.querySelectorAll('.ep').forEach(ep => {
+      const hit = !t || ep.dataset.s.includes(t);
+      ep.style.display = hit ? '' : 'none'; if (hit) n++;
+    });
+    sec.style.display = n ? '' : 'none'; if (n) any = true;
+  });
+  $('#empty').style.display = any ? 'none' : 'block';
+}
+q.addEventListener('input', filter);
+addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement !== q) { e.preventDefault(); q.focus(); }
+  if (e.key === 'Escape') { q.value = ''; filter(); q.blur(); }
+});
+
+/* base url */
+const env = $('#env'), base = $('#base');
+const setBase = () => {
+  if (env.value !== 'custom') base.value = env.value || location.origin;
+  document.querySelectorAll('.ep[open]').forEach(d => d._fill());
+};
+base.addEventListener('input', () => { env.value = 'custom'; document.querySelectorAll('.ep[open]').forEach(d => d._fill()); });
+env.addEventListener('change', setBase);
+env.value = /^(localhost|127\.)/.test(location.hostname) || location.protocol === 'file:' ? 'http://localhost:5010' : '';
+setBase();
+
+/* scroll-spy */
+const links = [...side.querySelectorAll('a[data-g]')];
+const spy = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) links.forEach(l => l.classList.toggle('on', l.dataset.g === e.target.id));
+}), { rootMargin: '-80px 0px -70% 0px' });
+host.querySelectorAll('section.group').forEach(sec => spy.observe(sec));
+
+/* mobile nav */
+$('#menu').onclick = () => side.classList.toggle('open');
+side.addEventListener('click', e => e.target.closest('a') && side.classList.remove('open'));
+
+/* sign out */
+$('#logout').onclick = () => fetch('/docs/logout', { method: 'POST' }).then(() => location.reload());
+
+/* theme */
+const root = document.documentElement;
+let saved = null; try { saved = localStorage.getItem('bfs-theme'); } catch {}
+root.dataset.theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+$('#theme').onclick = () => {
+  root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem('bfs-theme', root.dataset.theme); } catch {}
+};
+
+</script>
+</body>
 </html>

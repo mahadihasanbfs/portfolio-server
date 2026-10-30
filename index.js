@@ -20,40 +20,44 @@ const task_router = require('./Routers/task_router');
 const mail_router = require('./Routers/mail_router');
 const accounts_router = require('./Routers/accounts_router');
 const gmail_router = require('./Routers/gmail_router');
+const docs_auth = require('./Middleware/docs_auth');
 
 const allowedOrigins = [
   "https://brightfuturesoft.com",
   "https://www.brightfuturesoft.com",
-  "http://localhost:5173"
+  "http://localhost:5173",
+  "http://localhost:5010",
+
 ];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "author"
-  ]
-}));
+// Same-origin requests (the docs page calling its own server) are always allowed; other origins must be listed.
+const corsOptions = (req, callback) => {
+  const origin = req.header('Origin');
+  const proto = req.get('x-forwarded-proto') || req.protocol;
+  const self = `${proto}://${req.get('host')}`;
+  const allowed = !origin || origin === self || allowedOrigins.includes(origin);
+  callback(allowed ? null : new Error("Not allowed by CORS"), {
+    origin: allowed,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "author"]
+  });
+};
+app.use(cors(corsOptions));
 
 app.options("*", cors());
 
 
 // Mail with attachments is base64 in JSON: raise the limit for this route only (must come before the global parser).
 app.use('/api/v1/mail/gmail', express.json({ limit: '30mb' }));
+// Blog posts carry long HTML (and inline base64 images from the editor): the 100kb default rejects them.
+app.use('/api/v1/blog', express.json({ limit: '50mb' }));
 app.use(express.json());
 
-app.get("/", (req, res) => {
-      res.sendFile(path.join(__dirname, "index.html"));
-});
+// API reference: login page until signed in, then the docs.
+app.get("/", docs_auth.page);
+app.post("/docs/login", docs_auth.login);
+app.post("/docs/logout", docs_auth.logout);
 
 // API version 1 routes
 app.get("/api/v1/", (req, res) => {
