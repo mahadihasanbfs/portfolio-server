@@ -20,6 +20,10 @@ const task_router = require('./Routers/task_router');
 const mail_router = require('./Routers/mail_router');
 const accounts_router = require('./Routers/accounts_router');
 const gmail_router = require('./Routers/gmail_router');
+const attendance_router = require('./Routers/attendance_router');
+const bank_router = require('./Routers/bank_router');
+const employee_router = require('./Routers/employee_router');
+const access_router = require('./Routers/access_router');
 const docs_auth = require('./Middleware/docs_auth');
 
 const allowedOrigins = [
@@ -83,6 +87,10 @@ app.use('/api/v1/task', task_router);
 app.use('/api/v1/mail/gmail', gmail_router);
 app.use('/api/v1/mail', mail_router);
 app.use('/api/v1/accounts', accounts_router);
+app.use('/api/v1/attendance', attendance_router);
+app.use('/api/v1/bank', bank_router);
+app.use('/api/v1/employees', employee_router);
+app.use('/api/v1/access', access_router);
 app.use('/api/v2/image', imageRouter2);
 
 

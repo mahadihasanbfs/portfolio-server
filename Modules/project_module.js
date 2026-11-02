@@ -57,10 +57,11 @@ const delete_project = async (req, res, next) => {
 
 const update_project = async (req, res, next) => {
     const id = req.query.project_id;
-    const body = req.body;
+    // _id is immutable and url is the public link, so neither can be changed here.
+    const { _id, url, ...body } = req.body;
     try {
         const result = await project_collection.updateOne({ _id: new ObjectId(id) }, { $set: { ...body } });
-        if (result.modifiedCount === 1) {
+        if (result.matchedCount === 1) {
             res.send({
                 success: true,
                 message: 'project updated successfully',

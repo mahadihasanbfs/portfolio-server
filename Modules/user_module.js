@@ -106,6 +106,14 @@ const sign_in = async (req, res, next) => {
                   });
             }
 
+            if (user.active === false) {
+                  return res.status(403).send({
+                        success: false,
+                        message: 'This account has been deactivated. Contact an admin.',
+                        request_time: new Date().getTime()
+                  });
+            }
+
             // express 30 days
 
             const token = jwt.sign({ userId: user._id, email: user.email }, 'your_jwt_secret_key', {
