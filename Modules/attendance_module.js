@@ -1,6 +1,7 @@
 const { ObjectId } = require("mongodb");
 const { att_records_collection, att_leaves_collection, user_collection } = require("../Collection/all_collection");
 const c = require("./attendance_calc");
+const discord = require("./discord_module");
 
 const ok = (res, message, data) => res.send({ success: true, message, request_time: new Date().getTime(), data });
 const bad = (res, message, status = 400) =>
@@ -18,6 +19,21 @@ const ensure_index = async () => {
       await att_leaves_collection.createIndex({ userId: 1, from: 1 });
       indexed = true;
 };
+
+const REPORT_PART = (v) => String(v ?? "").trim().slice(0, 1500);
+// "None", "no", "not yet", "-" and the like mean there is no blocker.
+const NO_BLOCKER = /^(none|no|nil|nothing|n\/a|na|not yet|no blockers?|nope|nai|nei|no issues?|all good|fine|[-.]+)$/i;
+const BLOCKER_PART = (v) => { const t = REPORT_PART(v); return NO_BLOCKER.test(t.replace(/[.!\s]+$/g, "")) ? "" : t; };
+// Accepts { done, progress, blockers }, or a plain { report } (treated as "done"), or falls back to the saved one.
+const report_parts = (body = {}, rec = {}) => {
+      if (body.done !== undefined || body.progress !== undefined || body.blockers !== undefined) {
+            return { done: REPORT_PART(body.done), progress: REPORT_PART(body.progress), blockers: BLOCKER_PART(body.blockers) };
+      }
+      if (body.report !== undefined) return { done: REPORT_PART(body.report), progress: "", blockers: "" };
+      if (rec.reportParts) return rec.reportParts;
+      return rec.report ? { done: REPORT_PART(rec.report), progress: "", blockers: "" } : null;
+};
+const compose_report = (p) => [p.done && `Done: ${p.done}`, p.progress && `In progress: ${p.progress}`, p.blockers && `Blockers: ${p.blockers}`].filter(Boolean).join("\n");
 
 const leaves_of = (userId) => att_leaves_collection.find({ userId }).toArray();
 
@@ -60,7 +76,7 @@ const check_in = async (req, res, next) => {
             const next_sessions = [...sessions, session];
             const r = await att_records_collection.updateOne(
                   { _id: rec._id, sessions: rec.sessions },
-                  { $set: { sessions: next_sessions, checkOut: null } }
+                  { $set: { sessions: next_sessions, checkOut: null }, $unset: { dayClosedAt: "" } }
             );
             if (r.matchedCount !== 1) return bad(res, "Attendance changed, try again", 409);
             ok(res, "Checked in", { ...rec, sessions: next_sessions, ...c.day_view({ sessions: next_sessions }) });
@@ -75,13 +91,32 @@ const check_out = async (req, res, next) => {
             const rec = await att_records_collection.findOne({ userId: uid(req), date });
             const sessions = c.sessions_of(rec);
             if (!sessions.length) return bad(res, "Check in first", 409);
-            if (sessions[sessions.length - 1].out) return bad(res, "You are not checked in", 409);
+            const open = !sessions[sessions.length - 1].out;
 
-            const closed = sessions.map((x, i) => (i === sessions.length - 1 ? { ...x, out: now.toISOString() } : x));
-            const changes = { sessions: closed, checkOut: now.toISOString(), workedMinutes: c.total_minutes(closed) };
-            const r = await att_records_collection.updateOne({ _id: rec._id, sessions: rec.sessions }, { $set: changes });
+            // A normal check-out (break, lunch, stepping out) needs nothing. Ending the day (`endDay: true`) needs the daily report:
+            // what was done (required), what is in progress, and any blocker. After the first one it is pre-filled.
+            const endDay = req.body?.endDay === true;
+            if (!open && !endDay) return bad(res, "You are not checked in", 409);
+            let parts = null;
+            if (endDay) {
+                  parts = report_parts(req.body, rec);
+                  if (!parts || parts.done.length < 10) return bad(res, "Write what you finished today (at least 10 characters) to end your day", 422);
+            }
+
+            // Already stepped out (lunch, etc.) and now finishing for the day: keep the sessions, just add the report.
+            const closed = open ? sessions.map((x, i) => (i === sessions.length - 1 ? { ...x, out: now.toISOString() } : x)) : sessions;
+            const changes = {
+                  sessions: closed, checkOut: open ? now.toISOString() : sessions[sessions.length - 1].out, workedMinutes: c.total_minutes(closed),
+                  ...(endDay ? { report: compose_report(parts), reportParts: parts, reportAt: now.toISOString(), dayClosedAt: now.toISOString() } : {}),
+            };
+            // Ending the day twice (came back and worked more): the new report replaces the old, which is kept in the history.
+            const update = { $set: changes };
+            if (endDay && rec.reportParts) update.$push = { reportHistory: { parts: rec.reportParts, at: rec.reportAt || rec.createdAt } };
+            const r = await att_records_collection.updateOne({ _id: rec._id, sessions: rec.sessions }, update);
             if (r.matchedCount !== 1) return bad(res, "Attendance changed, try again", 409);
-            ok(res, "Checked out", { ...rec, ...changes, ...c.day_view({ sessions: closed }) });
+            // Awaited (and it never throws) so the post is not lost if the host stops the function after replying.
+            if (endDay) await discord.notify_checkout(req.user, { ...rec, ...changes }, parts);
+            ok(res, endDay ? "Day ended" : "Checked out", { ...rec, ...changes, ...c.day_view({ sessions: closed }) });
       } catch (e) { next(e); }
 };
 
@@ -93,7 +128,7 @@ const month_for = async (userId, month) => {
       const byDate = new Map(records.map((r) => [r.date, r]));
       const days = c.month_days(month).map((date) => {
             const r = byDate.get(date);
-            return { date, status: c.day_status({ date, record: r, leaves, today: todayDate }), ...c.day_view(r) };
+            return { date, status: c.day_status({ date, record: r, leaves, today: todayDate }), ...c.day_view(r), report: r?.report || "", reportParts: r?.reportParts || null };
       });
       return { month, days, summary: c.summarize({ month, records, leaves, today: todayDate }), leaves };
 };
@@ -118,6 +153,7 @@ const request_leave = async (req, res, next) => {
             if (mine.some((l) => l.status !== "rejected" && l.from <= to && from <= l.to)) return bad(res, "You already have a leave request overlapping these dates", 409);
             const doc = { userId: uid(req), from, to, type, reason: String(reason).slice(0, 500), status: "pending", createdAt: new Date().toISOString() };
             const r = await att_leaves_collection.insertOne(doc);
+            await discord.notify_leave_requested(req.user, doc);
             ok(res, "Leave requested", { ...doc, _id: r.insertedId });
       } catch (e) { next(e); }
 };
@@ -158,7 +194,7 @@ const daily = async (req, res, next) => {
                   const id = String(u._id);
                   const r = rec.get(id);
                   const status = c.day_status({ date, record: r, leaves: onLeave.has(id) ? [{ status: "approved", from: date, to: date }] : [], today: todayDate });
-                  return { userId: id, name: u.name, email: u.email, designation: u.designation, image: u.image, status, ...c.day_view(r), note: r?.note || "" };
+                  return { userId: id, name: u.name, email: u.email, designation: u.designation, image: u.image, status, ...c.day_view(r), note: r?.note || "", report: r?.report || "", reportParts: r?.reportParts || null };
             });
             const counts = rows.reduce((a, r) => ({ ...a, [r.status]: (a[r.status] || 0) + 1 }), {});
             ok(res, "Daily attendance", { date, weekend: c.is_weekend(date), counts, rows });
@@ -275,6 +311,7 @@ const decide_leave = async (req, res, next) => {
                   { _id: leave._id },
                   { $set: { status, decisionNote: String(note).trim().slice(0, 300), decidedBy: uid(req), decidedByName: req.user.name || "", decidedAt: new Date().toISOString() } }
             );
+            await discord.notify_leave_decided(leave.userId, (await user_collection.findOne({ _id: new ObjectId(leave.userId) }, { projection: { name: 1 } }))?.name || "Someone", leave, status, String(note).trim(), req.user.name || "an admin");
             ok(res, `Leave ${status}`);
       } catch (e) { next(e); }
 };

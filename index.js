@@ -25,6 +25,8 @@ const bank_router = require('./Routers/bank_router');
 const employee_router = require('./Routers/employee_router');
 const access_router = require('./Routers/access_router');
 const sales_router = require('./Routers/sales_router');
+const discord_router = require('./Routers/discord_router');
+const discord = require('./Modules/discord_module');
 const docs_auth = require('./Middleware/docs_auth');
 
 const allowedOrigins = [
@@ -93,6 +95,7 @@ app.use('/api/v1/bank', bank_router);
 app.use('/api/v1/employees', employee_router);
 app.use('/api/v1/access', access_router);
 app.use('/api/v1/sales', sales_router);
+app.use('/api/v1/discord', discord_router);
 app.use('/api/v2/image', imageRouter2);
 
 
@@ -125,6 +128,11 @@ app.use((err, req, res, next) => {
             request_no: new Date().getTime()
       });
 });
+
+// On a normal server, check every minute whether today's Discord report is due. On Vercel the cron route does this instead.
+if (!process.env.VERCEL) {
+  setInterval(() => { discord.send_daily().catch((e) => console.error('Discord daily report failed:', e.message)); }, 60 * 1000);
+}
 
 app.listen(port, () => {
       console.log(`Server is listening on http://localhost:${port}`);
