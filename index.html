@@ -196,7 +196,7 @@
           <p>All routes live under <code>/api/v1</code> (images also <code>/api/v2</code>).</p>
           <div class="urlrow">
             <select id="env">
-              <option value="http://localhost:5010">Local</option>
+              <option value="https://sever.brightfuturesoft.com">Local</option>
               <option value="">This server</option>
               <option value="custom">Custom…</option>
             </select>
@@ -542,7 +542,7 @@ const setBase = () => {
 };
 base.addEventListener('input', () => { env.value = 'custom'; document.querySelectorAll('.ep[open]').forEach(d => d._fill()); });
 env.addEventListener('change', setBase);
-env.value = /^(localhost|127\.)/.test(location.hostname) || location.protocol === 'file:' ? 'http://localhost:5010' : '';
+env.value = /^(localhost|127\.)/.test(location.hostname) || location.protocol === 'file:' ? 'https://sever.brightfuturesoft.com' : '';
 setBase();
 
 /* scroll-spy */

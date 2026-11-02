@@ -39,11 +39,15 @@ const mail_sent_collection = client.db("accounts").collection("sent_mails");
 const gmail_accounts_collection = client.db("accounts").collection("gmail_accounts");
 const att_records_collection = client.db("attendance").collection("records");
 const att_leaves_collection = client.db("attendance").collection("leaves");
+const sales_leads_collection = client.db("sales").collection("leads");
+const sales_visits_collection = client.db("sales").collection("visits");
 const hr_roles_collection = client.db("hr").collection("roles");
 const hr_bank_collection = client.db("hr").collection("bank_info");
 const acc_counters_collection = client.db("accounts").collection("counters");
 
 module.exports = {
+      sales_leads_collection,
+      sales_visits_collection,
       hr_roles_collection,
       hr_bank_collection,
       att_records_collection,

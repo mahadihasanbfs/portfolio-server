@@ -2,7 +2,7 @@
 
 Express + MongoDB backend (`index.js`).
 
-- Base URL (local): `http://localhost:5010`
+- Base URL (local): `https://sever.brightfuturesoft.com`
 - Base URL (prod): `https://brightfuturesoft.com` origins are allowed by CORS; check `vercel.json` for the API host.
 - Prefix: `/api/v1` (images also at `/api/v2/image`)
 - Health check: `GET /api/v1/`
@@ -65,7 +65,7 @@ Most "by id" endpoints take the Mongo `_id` as a **query parameter** (name liste
 Sign-in example:
 
 ```bash
-curl -X POST http://localhost:5010/api/v1/auth/sign-in \
+curl -X POST https://sever.brightfuturesoft.com/api/v1/auth/sign-in \
   -H 'Content-Type: application/json' -H 'author: bright_future_soft' \
   -d '{"email":"a@b.com","password":"secret"}'
 ```
