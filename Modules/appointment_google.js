@@ -17,10 +17,9 @@ const CFG = {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       encKey: process.env.GMAIL_ENC_KEY,
-      redirectUri: IS_PROD
-            ? "https://sever.brightfuturesoft.com/api/v1/appointment/google/callback"
-            : "http://localhost:5010/api/v1/appointment/google/callback",
-      frontend: IS_PROD ? "https://www.brightfuturesoft.com" : "http://localhost:5173",
+      redirectUri: "https://sever.brightfuturesoft.com/api/v1/appointment/google/callback",
+            
+      frontend: "https://www.brightfuturesoft.com",
 };
 const SCOPES = [
       "https://www.googleapis.com/auth/calendar.events",
@@ -101,8 +100,15 @@ const callback = async (req, res) => {
             );
             back(res, { gcal: "connected" });
       } catch (err) {
-            console.error("Appointment Google callback failed:", err.message, err.google || "");
-            back(res, { gcal: "error", reason: err.google || "failed" });
+            console.error("Appointment Google callback failed:", err.name, err.message, err.google || "");
+            // Name the failing step so the dashboard can say what to fix.
+            const reason = err.google
+                  || (err.name === "TokenExpiredError" ? "state_expired"
+                        : err.name === "JsonWebTokenError" ? "state_invalid"
+                              : /encrypt|key|cipher|iv/i.test(err.message || "") ? "encryption_key"
+                                    : /mongo|topology|timed out/i.test(`${err.name} ${err.message}`) ? "database"
+                                          : "failed");
+            back(res, { gcal: "error", reason, detail: String(err.message || "").slice(0, 120) });
       }
 };
 
