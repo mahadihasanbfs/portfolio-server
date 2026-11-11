@@ -68,24 +68,27 @@ const local_time_to_iso = (date, hhmm) => {
       return new Date(Date.parse(`${date}T00:00:00Z`) + (h * 60 + m - TZ_OFFSET_MIN) * 60000).toISOString();
 };
 
+// Weekend, or a company holiday (`holidays` is a Set of YYYY-MM-DD).
+const is_off = (date, holidays = new Set()) => is_weekend(date) || holidays.has(date);
+
 const approved_leave_on = (leaves, date) => leaves.some((l) => l.status === 'approved' && l.from <= date && date <= l.to);
 
 // Status of one person on one day. `today` is the local date now.
-const day_status = ({ date, record, leaves, today }) => {
+const day_status = ({ date, record, leaves, today, holidays }) => {
       if (record) return record.status;
       if (approved_leave_on(leaves, date)) return 'leave';
-      if (is_weekend(date)) return 'weekend';
+      if (is_off(date, holidays)) return 'weekend';
       if (date > today) return 'upcoming';
       if (date === today) return 'not_in';
       return 'absent';
 };
 
-const summarize = ({ month, records, leaves, today }) => {
+const summarize = ({ month, records, leaves, today, holidays }) => {
       const byDate = new Map(records.map((r) => [r.date, r]));
       const out = { present: 0, late: 0, leave: 0, absent: 0, workedMinutes: 0, workingDays: 0 };
       month_days(month).forEach((date) => {
-            const st = day_status({ date, record: byDate.get(date), leaves, today });
-            if (!is_weekend(date) && date <= today) out.workingDays += 1;
+            const st = day_status({ date, record: byDate.get(date), leaves, today, holidays });
+            if (!is_off(date, holidays) && date <= today) out.workingDays += 1;
             if (st === 'present' || st === 'late' || st === 'leave' || st === 'absent') out[st] += 1;
       });
       out.workedMinutes = records.reduce((n, r) => n + total_minutes(sessions_of(r)), 0);
@@ -93,6 +96,6 @@ const summarize = ({ month, records, leaves, today }) => {
 };
 
 module.exports = {
-      CONFIG, local_parts, is_date, is_month, is_weekend, days_between, month_days,
+      CONFIG, local_parts, is_date, is_month, is_weekend, is_off, days_between, month_days,
       status_for_check_in, worked_minutes, sessions_of, total_minutes, day_view, local_time_to_iso, approved_leave_on, day_status, summarize,
 };

@@ -16,6 +16,10 @@
     {
       "path": "/api/v1/discord/cron",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/v1/discord/cron",
+      "schedule": "0 13 * * *"
     }
   ]
 }

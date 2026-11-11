@@ -1,4 +1,5 @@
 const axios = require("axios");
+const { ObjectId } = require("mongodb");
 const { hr_settings_collection, user_collection, att_records_collection, att_leaves_collection, sales_leads_collection, sales_visits_collection } = require("../Collection/all_collection");
 const c = require("./attendance_calc");
 
@@ -7,14 +8,14 @@ const bad = (res, message, status = 400) =>
       res.status(status).send({ success: false, message, request_time: new Date().getTime() });
 
 const KEY = "discord";
-const DEFAULTS = { enabled: false, webhookUrl: "", time: "18:00", leaveEvents: true, checkoutReports: true, sections: { attendance: true, leave: true, sales: true }, lastSentDate: "", lastError: "" };
+const DEFAULTS = { enabled: false, webhookUrl: "", time: "18:00", leaveEvents: true, checkoutReports: true, reminder: true, reminderTime: "19:00", lastReminderDate: "", sections: { attendance: true, leave: true, sales: true }, lastSentDate: "", lastError: "" };
 // Only real Discord webhooks, so this cannot be pointed at other servers.
 const WEBHOOK = /^https:\/\/(discord|discordapp)\.com\/api\/webhooks\/\d+\/[\w-]+$/;
 
 const load = async () => ({ ...DEFAULTS, ...(await hr_settings_collection.findOne({ _id: KEY })) });
 const save = (set) => hr_settings_collection.updateOne({ _id: KEY }, { $set: set }, { upsert: true });
 const mask = (url) => (url ? `https://discord.com/api/webhooks/…${url.slice(-6)}` : "");
-const public_view = (s) => ({ enabled: s.enabled, hasWebhook: Boolean(s.webhookUrl), webhookMasked: mask(s.webhookUrl), time: s.time, leaveEvents: s.leaveEvents, checkoutReports: s.checkoutReports, sections: s.sections, lastSentDate: s.lastSentDate, lastError: s.lastError });
+const public_view = (s) => ({ enabled: s.enabled, hasWebhook: Boolean(s.webhookUrl), webhookMasked: mask(s.webhookUrl), time: s.time, leaveEvents: s.leaveEvents, checkoutReports: s.checkoutReports, reminder: s.reminder, reminderTime: s.reminderTime, sections: s.sections, lastSentDate: s.lastSentDate, lastError: s.lastError });
 
 const post = async (webhookUrl, payload) => {
       await axios.post(webhookUrl, { username: "Bright Future Soft", ...payload }, { timeout: 10000 });
@@ -133,6 +134,45 @@ const send_daily = async ({ force = false } = {}) => {
       }
 };
 
+// After the reminder time, name everyone who checked in today but has not pressed "End day" (no daily report yet). Once a day.
+const remind_end_day = async () => {
+      const s = await load();
+      if (!s.webhookUrl || !s.enabled || !s.reminder) return { sent: false, reason: "Reminder is off" };
+      const { date, minutes } = c.local_parts();
+      const holidays = new Set(((await hr_settings_collection.findOne({ _id: "attendance_policy" }))?.holidays || []).map((h) => h.date));
+      if (c.is_off(date, holidays)) return { sent: false, reason: "Weekend or holiday" };
+      const [h, m] = String(s.reminderTime).split(":").map(Number);
+      if (minutes < h * 60 + m) return { sent: false, reason: "Not time yet" };
+      const claim = await hr_settings_collection.updateOne({ _id: KEY, lastReminderDate: { $ne: date } }, { $set: { lastReminderDate: date } });
+      if (claim.matchedCount !== 1) return { sent: false, reason: "Already reminded today" };
+      try {
+            const open = await att_records_collection.find({ date, dayClosedAt: { $exists: false } }).toArray();
+            if (!open.length) return { sent: false, reason: "Everyone ended the day" };
+            const users = await user_collection.find({ _id: { $in: open.map((r) => new ObjectId(r.userId)) } }, { projection: { name: 1 } }).toArray();
+            const name = new Map(users.map((u) => [String(u._id), u.name]));
+            const still = open.filter((r) => c.day_view(r).open).map((r) => name.get(r.userId) || "Unknown");
+            const out = open.filter((r) => !c.day_view(r).open).map((r) => name.get(r.userId) || "Unknown");
+            const fields = [
+                  still.length && { name: `🟢 Still checked in (${still.length})`, value: trim(still) },
+                  out.length && { name: `🚪 Stepped out, no report (${out.length})`, value: trim(out) },
+            ].filter(Boolean);
+            await post(s.webhookUrl, { embeds: [{ title: "⏰ Please end your day", description: "Press **End day** and write your daily report.", color: 0xf59e0b, fields, timestamp: new Date().toISOString() }] });
+            return { sent: true, date, count: open.length };
+      } catch (e) {
+            await save({ lastError: `${new Date().toISOString()} ${e.message}`.slice(0, 300), lastReminderDate: "" });
+            throw e;
+      }
+};
+
+// Run by the scheduler: the daily report and the end-of-day reminder, each when its time comes.
+const tick = async () => {
+      const out = {};
+      for (const [k, fn] of [["daily", send_daily], ["reminder", remind_end_day]]) {
+            try { out[k] = await fn(); } catch (e) { out[k] = { sent: false, error: e.message }; console.error(`Discord ${k} failed:`, e.message); }
+      }
+      return out;
+};
+
 // Instant message when someone asks for leave or it is decided. Never blocks or breaks the request.
 const notify = async (embed, flag = "leaveEvents") => {
       try {
@@ -161,6 +201,8 @@ const put_settings = async (req, res, next) => {
             if (typeof b.enabled === "boolean") set.enabled = b.enabled;
             if (typeof b.leaveEvents === "boolean") set.leaveEvents = b.leaveEvents;
             if (typeof b.checkoutReports === "boolean") set.checkoutReports = b.checkoutReports;
+            if (typeof b.reminder === "boolean") set.reminder = b.reminder;
+            if (b.reminderTime !== undefined) { if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(b.reminderTime)) return bad(res, "Reminder time must be HH:MM"); set.reminderTime = b.reminderTime; }
             if (b.time !== undefined) { if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(b.time)) return bad(res, "Time must be HH:MM"); set.time = b.time; }
             if (b.sections && typeof b.sections === "object") set.sections = { attendance: Boolean(b.sections.attendance), leave: Boolean(b.sections.leave), sales: Boolean(b.sections.sales) };
             const now = await load();
@@ -191,7 +233,7 @@ const cron = async (req, res, next) => {
       try {
             const secret = process.env.CRON_SECRET;
             if (!secret || req.header("Authorization") !== `Bearer ${secret}`) return bad(res, "Forbidden", 403);
-            ok(res, "Cron", await send_daily());
+            ok(res, "Cron", await tick());
       } catch (e) { next(e); }
 };
 
@@ -222,4 +264,4 @@ const notify_checkout = (user, rec, parts) => {
       }, "checkoutReports");
 };
 
-module.exports = { notify_checkout, send_daily, notify_leave_requested, notify_leave_decided, get_settings, put_settings, test, send_now, cron };
+module.exports = { tick, remind_end_day, notify_checkout, send_daily, notify_leave_requested, notify_leave_decided, get_settings, put_settings, test, send_now, cron };

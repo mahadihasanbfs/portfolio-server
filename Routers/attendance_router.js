@@ -9,6 +9,8 @@ router.post("/check-in", authenticate, m.check_in);
 router.post("/check-out", authenticate, m.check_out);
 router.get("/my", authenticate, m.my_month);
 router.get("/my-leaves", authenticate, m.my_leaves);
+router.get("/balance", authenticate, m.balance);
+router.get("/policy", authenticate, m.get_policy);
 router.post("/leaves", authenticate, m.request_leave);
 router.delete("/leaves/:id", authenticate, m.cancel_leave);
 
@@ -19,6 +21,8 @@ router.get("/monthly", admin_only, m.monthly);
 router.get("/employee/:userId", admin_only, m.employee);
 router.put("/records", admin_only, m.correct_record);
 router.delete("/records", admin_only, m.delete_record);
+router.put("/policy", admin_only, m.put_policy);
+router.get("/payroll", admin_only, m.payroll);
 router.get("/leaves", admin_only, m.all_leaves);
 router.put("/leaves/:id/decision", admin_only, m.decide_leave);
 

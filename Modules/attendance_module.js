@@ -1,13 +1,15 @@
 const { ObjectId } = require("mongodb");
-const { att_records_collection, att_leaves_collection, user_collection } = require("../Collection/all_collection");
+const { att_records_collection, att_leaves_collection, user_collection, hr_settings_collection } = require("../Collection/all_collection");
 const c = require("./attendance_calc");
+const pay = require("./payroll_calc");
 const discord = require("./discord_module");
 
 const ok = (res, message, data) => res.send({ success: true, message, request_time: new Date().getTime(), data });
 const bad = (res, message, status = 400) =>
       res.status(status).send({ success: false, message, request_time: new Date().getTime() });
 
-const LEAVE_TYPES = ["casual", "sick", "annual", "unpaid", "other"];
+const LEAVE_TYPES = ["casual", "sick", "annual", "unpaid"];
+const POLICY_KEY = "attendance_policy";
 const STATUSES = ["present", "late"];
 const uid = (req) => String(req.user._id);
 
@@ -36,6 +38,13 @@ const report_parts = (body = {}, rec = {}) => {
 const compose_report = (p) => [p.done && `Done: ${p.done}`, p.progress && `In progress: ${p.progress}`, p.blockers && `Blockers: ${p.blockers}`].filter(Boolean).join("\n");
 
 const leaves_of = (userId) => att_leaves_collection.find({ userId }).toArray();
+
+// Leave limits, the off-day bonus and company holidays, editable by admins.
+const load_policy = async () => {
+      const saved = (await hr_settings_collection.findOne({ _id: POLICY_KEY })) || {};
+      return { ...pay.DEFAULT_POLICY, ...saved, quotas: { ...pay.DEFAULT_POLICY.quotas, ...Object.fromEntries(Object.entries(saved.quotas || {}).filter(([, v]) => v !== null)) }, holidays: saved.holidays || [] };
+};
+const holiday_set = (policy) => new Set(policy.holidays.map((h) => h.date));
 
 /* ============ employee ============ */
 
@@ -124,13 +133,14 @@ const check_out = async (req, res, next) => {
 const month_for = async (userId, month) => {
       const records = await att_records_collection.find({ userId, date: { $regex: `^${month}-` } }).sort({ date: 1 }).toArray();
       const leaves = await leaves_of(userId);
+      const holidays = holiday_set(await load_policy());
       const todayDate = c.local_parts().date;
       const byDate = new Map(records.map((r) => [r.date, r]));
       const days = c.month_days(month).map((date) => {
             const r = byDate.get(date);
-            return { date, status: c.day_status({ date, record: r, leaves, today: todayDate }), ...c.day_view(r), report: r?.report || "", reportParts: r?.reportParts || null };
+            return { date, status: c.day_status({ date, record: r, leaves, today: todayDate, holidays }), ...c.day_view(r), report: r?.report || "", reportParts: r?.reportParts || null, reportAt: r?.reportAt || null, reportHistory: r?.reportHistory || [] };
       });
-      return { month, days, summary: c.summarize({ month, records, leaves, today: todayDate }), leaves };
+      return { month, days, summary: c.summarize({ month, records, leaves, today: todayDate, holidays }), leaves };
 };
 
 const my_month = async (req, res, next) => {
@@ -151,6 +161,19 @@ const request_leave = async (req, res, next) => {
             if (!LEAVE_TYPES.includes(type)) return bad(res, `type must be one of: ${LEAVE_TYPES.join(", ")}`);
             const mine = await leaves_of(uid(req));
             if (mine.some((l) => l.status !== "rejected" && l.from <= to && from <= l.to)) return bad(res, "You already have a leave request overlapping these dates", 409);
+            const policy = await load_policy();
+            const holidays = holiday_set(policy);
+            if (pay.working_days(from, to, holidays) === 0) return bad(res, "Those dates are all weekend or holiday, nothing to request", 422);
+            // Paid types have a yearly cap. Pending requests count so nobody can queue up more than the limit.
+            const cap = policy.quotas[type];
+            if (cap !== null && cap !== undefined) {
+                  for (const year of new Set([from.slice(0, 4), to.slice(0, 4)])) {
+                        const asked = pay.working_days(from < `${year}-01-01` ? `${year}-01-01` : from, to > `${year}-12-31` ? `${year}-12-31` : to, holidays);
+                        const has = pay.leave_usage(mine, Number(year), holidays)[type] || { used: 0, pending: 0 };
+                        const left = Math.max(0, cap - has.used - has.pending);
+                        if (asked > left) return bad(res, `${type[0].toUpperCase()}${type.slice(1)} leave: you asked for ${asked} day${asked === 1 ? "" : "s"} but only ${left} of ${cap} left in ${year}`, 422);
+                  }
+            }
             const doc = { userId: uid(req), from, to, type, reason: String(reason).slice(0, 500), status: "pending", createdAt: new Date().toISOString() };
             const r = await att_leaves_collection.insertOne(doc);
             await discord.notify_leave_requested(req.user, doc);
@@ -174,6 +197,21 @@ const cancel_leave = async (req, res, next) => {
       } catch (e) { next(e); }
 };
 
+// Yearly allowance per leave type, what is used / waiting, and the company holidays.
+const balance = async (req, res, next) => {
+      try {
+            const year = Number(req.query.year) || Number(c.local_parts().date.slice(0, 4));
+            const policy = await load_policy();
+            const usage = pay.leave_usage(await leaves_of(uid(req)), year, holiday_set(policy));
+            const types = LEAVE_TYPES.map((type) => {
+                  const cap = policy.quotas[type] ?? null;
+                  const { used = 0, pending = 0 } = usage[type] || {};
+                  return { type, cap, used, pending, left: cap === null ? null : Math.max(0, cap - used - pending) };
+            });
+            ok(res, "Leave balance", { year, types, holidays: policy.holidays });
+      } catch (e) { next(e); }
+};
+
 /* ============ admin ============ */
 
 const staff = () => user_collection.find({}, { projection: { name: 1, email: 1, designation: 1, image: 1 } }).sort({ name: 1 }).toArray();
@@ -182,6 +220,7 @@ const daily = async (req, res, next) => {
       try {
             const date = req.query.date || c.local_parts().date;
             if (!c.is_date(date)) return bad(res, "date must be YYYY-MM-DD");
+            const holidays = holiday_set(await load_policy());
             const [users, records, leaves] = await Promise.all([
                   staff(),
                   att_records_collection.find({ date }).toArray(),
@@ -193,11 +232,11 @@ const daily = async (req, res, next) => {
             const rows = users.map((u) => {
                   const id = String(u._id);
                   const r = rec.get(id);
-                  const status = c.day_status({ date, record: r, leaves: onLeave.has(id) ? [{ status: "approved", from: date, to: date }] : [], today: todayDate });
-                  return { userId: id, name: u.name, email: u.email, designation: u.designation, image: u.image, status, ...c.day_view(r), note: r?.note || "", report: r?.report || "", reportParts: r?.reportParts || null };
+                  const status = c.day_status({ date, record: r, leaves: onLeave.has(id) ? [{ status: "approved", from: date, to: date }] : [], today: todayDate, holidays });
+                  return { userId: id, name: u.name, email: u.email, designation: u.designation, image: u.image, status, ...c.day_view(r), note: r?.note || "", report: r?.report || "", reportParts: r?.reportParts || null, reportAt: r?.reportAt || null, reportHistory: r?.reportHistory || [] };
             });
             const counts = rows.reduce((a, r) => ({ ...a, [r.status]: (a[r.status] || 0) + 1 }), {});
-            ok(res, "Daily attendance", { date, weekend: c.is_weekend(date), counts, rows });
+            ok(res, "Daily attendance", { date, weekend: c.is_off(date, holidays), counts, rows });
       } catch (e) { next(e); }
 };
 
@@ -207,6 +246,7 @@ const monthly = async (req, res, next) => {
             if (!c.is_month(month)) return bad(res, "month must be YYYY-MM");
             const first = `${month}-01`;
             const last = c.month_days(month).pop();
+            const holidays = holiday_set(await load_policy());
             const [users, records, leaves] = await Promise.all([
                   staff(),
                   att_records_collection.find({ date: { $regex: `^${month}-` } }).toArray(),
@@ -217,7 +257,7 @@ const monthly = async (req, res, next) => {
             const recBy = group(records), leaveBy = group(leaves);
             const rows = users.map((u) => {
                   const id = String(u._id);
-                  return { userId: id, name: u.name, email: u.email, designation: u.designation, ...c.summarize({ month, records: recBy.get(id) || [], leaves: leaveBy.get(id) || [], today: todayDate }) };
+                  return { userId: id, name: u.name, email: u.email, designation: u.designation, ...c.summarize({ month, records: recBy.get(id) || [], leaves: leaveBy.get(id) || [], today: todayDate, holidays }) };
             });
             ok(res, "Monthly attendance", { month, rows });
       } catch (e) { next(e); }
@@ -287,6 +327,67 @@ const employee = async (req, res, next) => {
       } catch (e) { next(e); }
 };
 
+const get_policy = async (req, res, next) => { try { ok(res, "Attendance policy", await load_policy()); } catch (e) { next(e); } };
+
+const put_policy = async (req, res, next) => {
+      try {
+            const { quotas = {}, offDayBonusPercent, lateDaysPerDeduction, holidays } = req.body || {};
+            const set = {};
+            const clean = {};
+            for (const t of LEAVE_TYPES) {
+                  if (!(t in quotas)) continue;
+                  const v = quotas[t];
+                  if (v === null || v === "") return bad(res, `${t}: set a yearly limit in days`);
+                  if (Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 366) clean[t] = Number(v);
+                  else return bad(res, `${t}: days must be a whole number from 0 to 366`);
+            }
+            Object.entries(clean).forEach(([t, v]) => { set[`quotas.${t}`] = v; });
+            if (offDayBonusPercent !== undefined) {
+                  const n = Number(offDayBonusPercent);
+                  if (!Number.isFinite(n) || n < 0 || n > 500) return bad(res, "Bonus percent must be between 0 and 500");
+                  set.offDayBonusPercent = n;
+            }
+            if (lateDaysPerDeduction !== undefined) {
+                  const n = Number(lateDaysPerDeduction);
+                  if (!Number.isInteger(n) || n < 0 || n > 31) return bad(res, "Late days per deduction must be a whole number from 0 to 31 (0 = off)");
+                  set.lateDaysPerDeduction = n;
+            }
+            if (holidays !== undefined) {
+                  if (!Array.isArray(holidays) || holidays.length > 200) return bad(res, "holidays must be a list of up to 200");
+                  if (holidays.some((h) => !c.is_date(h?.date))) return bad(res, "Every holiday needs a date (YYYY-MM-DD)");
+                  const seen = new Map(holidays.map((h) => [h.date, String(h.name || "Holiday").trim().slice(0, 60) || "Holiday"]));
+                  set.holidays = [...seen].map(([date, name]) => ({ date, name })).sort((a, b) => (a.date < b.date ? -1 : 1));
+            }
+            if (Object.keys(set).length) await hr_settings_collection.updateOne({ _id: POLICY_KEY }, { $set: set }, { upsert: true });
+            ok(res, "Policy saved", await load_policy());
+      } catch (e) { next(e); }
+};
+
+// Salary for a month for everyone, from attendance + approved unpaid leave + weekend/holiday work.
+const payroll = async (req, res, next) => {
+      try {
+            const month = req.query.month || c.local_parts().date.slice(0, 7);
+            if (!c.is_month(month)) return bad(res, "month must be YYYY-MM");
+            const policy = await load_policy();
+            const holidays = holiday_set(policy);
+            const last = c.month_days(month).pop();
+            const [users, records, leaves] = await Promise.all([
+                  user_collection.find({}, { projection: { name: 1, email: 1, designation: 1, image: 1, salary: 1 } }).sort({ name: 1 }).toArray(),
+                  att_records_collection.find({ date: { $regex: `^${month}-` } }).toArray(),
+                  att_leaves_collection.find({ status: "approved", from: { $lte: last }, to: { $gte: `${month}-01` } }).toArray(),
+            ]);
+            const today = c.local_parts().date;
+            const group = (rows) => rows.reduce((m, r) => m.set(r.userId, [...(m.get(r.userId) || []), r]), new Map());
+            const recBy = group(records), leaveBy = group(leaves);
+            const rows = users.map((u) => {
+                  const id = String(u._id);
+                  return { userId: id, name: u.name, email: u.email, designation: u.designation, ...pay.payroll({ salary: u.salary, month, records: recBy.get(id) || [], leaves: leaveBy.get(id) || [], holidays, today, offDayBonusPercent: policy.offDayBonusPercent, lateDaysPerDeduction: policy.lateDaysPerDeduction }) };
+            });
+            const total = rows.reduce((t, r) => ({ salary: t.salary + r.salary, deduction: t.deduction + r.deduction, bonus: t.bonus + r.bonus, net: t.net + r.net }), { salary: 0, deduction: 0, bonus: 0, net: 0 });
+            ok(res, "Payroll", { month, offDayBonusPercent: policy.offDayBonusPercent, lateDaysPerDeduction: policy.lateDaysPerDeduction, total, rows });
+      } catch (e) { next(e); }
+};
+
 const all_leaves = async (req, res, next) => {
       try {
             const { status } = req.query;
@@ -316,4 +417,4 @@ const decide_leave = async (req, res, next) => {
       } catch (e) { next(e); }
 };
 
-module.exports = { today, check_in, check_out, my_month, request_leave, my_leaves, cancel_leave, daily, monthly, employee, correct_record, delete_record, all_leaves, decide_leave };
+module.exports = { balance, get_policy, put_policy, payroll, today, check_in, check_out, my_month, request_leave, my_leaves, cancel_leave, daily, monthly, employee, correct_record, delete_record, all_leaves, decide_leave };

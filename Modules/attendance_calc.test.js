@@ -50,3 +50,10 @@ test('sessions: many per day, legacy record, open session', () => {
       assert.deepStrictEqual([legacy.sessions.length, legacy.workedMinutes], [1, 60]);
       assert.strictEqual(c.day_view(null).checkIn, null);
 });
+
+test('holiday is off like a weekend', () => {
+      const h = new Set(['2026-11-03']);
+      assert.ok(c.is_off('2026-11-03', h));
+      assert.ok(!c.is_off('2026-11-03'));
+      assert.strictEqual(c.day_status({ date: '2026-11-03', record: null, leaves: [], today: '2026-11-10', holidays: h }), 'weekend');
+});

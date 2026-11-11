@@ -4,6 +4,11 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const { user_collection } = require('../Collection/all_collection');
 const { ObjectId } = require('mongodb');
+const { ADMIN_DESIGNATIONS } = require('../Middleware/access');
+
+const forbidden = (res, message) => res.status(403).send({ success: false, message, request_time: new Date().getTime() });
+const is_admin = (u) => Boolean(u) && ADMIN_DESIGNATIONS.includes(u.designation);
+const is_self = (req, id) => String(req.user._id) === String(id);
 
 
 
@@ -21,6 +26,11 @@ const sign_up = async (req, res, next) => {
                   message: 'Invalid input data. Required fields are missing.',
                   request_time: new Date().getTime()
             });
+      }
+
+      // Anyone can reach sign-up, so it can never create a CEO or manager.
+      if (ADMIN_DESIGNATIONS.includes(String(designation).trim())) {
+            return forbidden(res, 'Admin designations can only be given by an admin in Employee Management.');
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -295,10 +305,11 @@ const get_all_users = async (req, res, next) => {
       const { email } = req.query;
 
       try {
-            const users = await user_collection.find(
-                  { email: { $ne: email } },
-                  { projection: { password: 0 } }
-            ).toArray();
+            // Signed out (the public Team / About pages): names, roles and photos only. Staff get the full profile, never the password or bank/salary.
+            const projection = req.user
+                  ? { password: 0, resetToken: 0, resetTokenExpiry: 0, salary: 0 }
+                  : { name: 1, designation: 1, possition: 1, image: 1, linkedin: 1 };
+            const users = await user_collection.find({ email: { $ne: email } }, { projection }).toArray();
             res.send({
                   success: true,
                   message: 'All users found successfully',
@@ -312,8 +323,9 @@ const get_all_users = async (req, res, next) => {
 
 const update_user_data = async (req, res, next) => {
       const { user_id } = req.query;
-      const { phone, linkedin, dob, name, designation, image } = req.body;
-
+      const { phone, linkedin, dob, name, image } = req.body;
+      if (!ObjectId.isValid(user_id)) return forbidden(res, 'Invalid user.');
+      if (!is_self(req, user_id) && !is_admin(req.user)) return forbidden(res, 'You can only edit your own profile.');
 
       try {
             const user = await user_collection.findOne({ _id: new ObjectId(user_id) });
@@ -325,6 +337,8 @@ const update_user_data = async (req, res, next) => {
                   });
             }
 
+            // Only an admin can change a designation (it decides access); everyone else keeps theirs.
+            const designation = is_admin(req.user) && req.body.designation ? req.body.designation : user.designation;
             await user_collection.updateOne({ _id: new ObjectId(user_id) }, { $set: { name, designation, image, phone, linkedin, dob } });
             let get_user = await user_collection.findOne({ _id: new ObjectId(user_id) });
             delete get_user.password
@@ -345,6 +359,8 @@ const update_user_data = async (req, res, next) => {
 const update_user_password = async (req, res, next) => {
       const { user_id } = req.query;
       const { old_password, new_password } = req.body
+      if (!ObjectId.isValid(user_id) || !is_self(req, user_id)) return forbidden(res, 'You can only change your own password.');
+      if (typeof new_password !== 'string' || new_password.length < 6) return res.status(400).send({ success: false, message: 'Password should be at least 6 characters long.', request_time: new Date().getTime() });
 
       try {
             const user = await user_collection.findOne({ _id: new ObjectId(user_id) });
@@ -382,6 +398,9 @@ const update_user_password = async (req, res, next) => {
 const delete_user = async (req, res, next) => {
       try {
             const user_id = req.params.id
+            if (!ObjectId.isValid(user_id)) return forbidden(res, 'Invalid user.');
+            if (!is_admin(req.user)) return forbidden(res, 'Admin access required.');
+            if (is_self(req, user_id)) return forbidden(res, 'You cannot delete your own account.');
             //need to delete user form database
             const delete_user = await user_collection.deleteOne({ _id: new ObjectId(user_id) });
             if (delete_user.deletedCount === 0) {

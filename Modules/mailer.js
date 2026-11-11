@@ -6,7 +6,7 @@ const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
             user: 'brightfuturesoft@gmail.com',
-            pass: process.env.GMAIL_APP_PASSWORD || 'swvo mijf zdrv soar', // Use env variable in production!
+            pass: process.env.GMAIL_APP_PASSWORD, // set in .env; never commit a password
       },
 });
 
@@ -173,4 +173,4 @@ Bright Future Soft Team`;
       });
 }
 
-module.exports = { sendMeetingInvite };
+module.exports = { sendMeetingInvite, transporter };

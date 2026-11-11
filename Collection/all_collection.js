@@ -29,6 +29,8 @@ const notice_collection = client.db("notice").collection("notice");
 const contact_collection = client.db("contact").collection("contact");
 const subscriber_collection = client.db("contact").collection("subscriber");
 const client_meeting_collection = client.db("administrator").collection("client_meeting");
+const appointment_settings_collection = client.db("administrator").collection("appointment_settings");
+const appointment_collection = client.db("administrator").collection("appointment");
 const acc_clients_collection = client.db("accounts").collection("clients");
 const acc_invoices_collection = client.db("accounts").collection("invoices");
 const acc_payslips_collection = client.db("accounts").collection("payslips");
@@ -78,6 +80,8 @@ module.exports = {
       contact_collection,
       subscriber_collection,
       client_meeting_collection,
+      appointment_collection,
+      appointment_settings_collection,
       image_collection
 
 }

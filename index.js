@@ -13,6 +13,7 @@ const job_router = require('./Routers/job_router');
 const issue_router = require('./Routers/issue_router');
 const notice_router = require('./Routers/notice_router');
 const meeting_router = require('./Routers/meeting_router');
+const appointment_router = require('./Routers/appointment_router');
 const project_router = require('./Routers/project_router');
 const subcriber_router = require('./Routers/subcriber_router');
 const contact_router = require('./Routers/contact_router');
@@ -83,6 +84,7 @@ app.use('/api/v1/job-post', job_router);
 app.use('/api/v1/issue', issue_router);
 app.use('/api/v1/notice', notice_router);
 app.use('/api/v1/meeting', meeting_router);
+app.use('/api/v1/appointment', appointment_router);
 app.use('/api/v1/project', project_router);
 app.use('/api/v1/subscriber', subcriber_router);
 app.use('/api/v1/contact', contact_router);
@@ -131,7 +133,9 @@ app.use((err, req, res, next) => {
 
 // On a normal server, check every minute whether today's Discord report is due. On Vercel the cron route does this instead.
 if (!process.env.VERCEL) {
-  setInterval(() => { discord.send_daily().catch((e) => console.error('Discord daily report failed:', e.message)); }, 60 * 1000);
+  setInterval(() => { discord.tick(); }, 60 * 1000);
+  // Appointment reminder emails (24h and 1h before). On Vercel, call /api/v1/appointment/reminders/run from a scheduler instead.
+  setInterval(() => { require('./Modules/appointment_module').run_reminders().catch(e => console.error('Reminder run failed:', e.message)); }, 60 * 1000);
 }
 
 app.listen(port, () => {

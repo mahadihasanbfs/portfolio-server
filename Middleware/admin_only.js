@@ -50,4 +50,17 @@ const page_only = (key) => (req, res, next) =>
             }
       });
 
-module.exports = { authenticate, admin_only, page_only, ADMIN_DESIGNATIONS, JWT_SECRET };
+// Like authenticate, but a missing or bad token is fine: req.user is only set when the token is valid.
+const optional_auth = async (req, res, next) => {
+      try {
+            const header = req.header('Authorization') || '';
+            if (header.startsWith('Bearer ')) {
+                  const decoded = jwt.verify(header.slice(7), JWT_SECRET);
+                  const user = await user_collection.findOne({ _id: new ObjectId(decoded.userId) });
+                  if (user && user.active !== false) { const { password, ...safe } = user; req.user = safe; }
+            }
+      } catch (error) { /* treated as signed out */ }
+      next();
+};
+
+module.exports = { authenticate, optional_auth, admin_only, page_only, ADMIN_DESIGNATIONS, JWT_SECRET };
