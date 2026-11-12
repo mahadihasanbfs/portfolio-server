@@ -17,7 +17,7 @@ const CFG = {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       encKey: process.env.GMAIL_ENC_KEY,
-      redirectUri: "https://sever.brightfuturesoft.com/api/v1/appointment/google/callback",
+      redirectUri: "http://localhost:5010/api/v1/appointment/google/callback",
             
       frontend: "https://www.brightfuturesoft.com",
 };

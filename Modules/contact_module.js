@@ -1,10 +1,11 @@
 const { ObjectId } = require("mongodb");
 const { contact_collection } = require("../Collection/all_collection");
+const { reason_label } = require("./contact_reasons");
 
 const add_contact = async (req, res, next) => {
-      const body = req.body;
-      //need to check full_name, email_or_phone, message, time_stamp
-      const { full_name, email_or_phone, message, time_stamp } = body;
+      const body = req.body || {};
+      //need to check full_name, email_or_phone, message, time_stamp, and the reason for contacting us
+      const { full_name, email_or_phone, message, time_stamp, reason } = body;
       if (!full_name || !email_or_phone || !message || !time_stamp) {
             return res.status(400).send({
                   success: false,
@@ -12,15 +13,32 @@ const add_contact = async (req, res, next) => {
                   request_time: new Date().getTime()
             });
       }
+      const label = reason_label(reason);
+      if (!label) {
+            return res.status(400).send({
+                  success: false,
+                  message: 'Please choose why you are contacting us',
+                  request_time: new Date().getTime()
+            });
+      }
 
       try {
-
-            const result = await contact_collection.insertOne(body);
+            // Only known fields are stored: a visitor cannot set status or add other fields.
+            const doc = {
+                  full_name: String(full_name).slice(0, 120),
+                  email_or_phone: String(email_or_phone).slice(0, 160),
+                  message: String(message).slice(0, 20000),
+                  time_stamp,
+                  status: 'pending',
+                  reason,
+                  reason_label: label,
+            };
+            const result = await contact_collection.insertOne(doc);
 
             res.send({
                   success: true,
                   message: 'Contact added successfully',
-                  data: result.ops, // Return inserted documents
+                  data: [{ ...doc, _id: result.insertedId }],
                   request_time: new Date().getTime()
             });
 

@@ -1,3 +1,4 @@
+require('./node26-fix'); // must load before any dependency (see file)
 const express = require('express');
 const app = express();
 const path = require('path');
